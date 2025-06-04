@@ -1,0 +1,263 @@
+/* src/components/PDFViewer.css */
+.pdf-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #f5f5f5;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 99999;
+  width: 100vw;
+}
+
+.viewer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  background: white;
+  border-bottom: 1px solid #ddd;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  min-height: 60px;
+}
+
+.viewer-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.2rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 70%;
+}
+
+.viewer-controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.close-btn, .retry-btn, .view-pdf-btn {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  text-decoration: none;
+}
+
+.close-btn {
+  background: #6c757d;
+  color: white;
+}
+
+.close-btn:hover {
+  background: #545b62;
+}
+
+.retry-btn {
+  background: #28a745;
+  color: white;
+}
+
+.retry-btn:hover {
+  background: #1e7e34;
+}
+
+.view-pdf-btn {
+  background: #17a2b8;
+  color: white;
+  text-decoration: none;
+}
+
+.view-pdf-btn:hover {
+  background: #117a8b;
+  color: white;
+  text-decoration: none;
+}
+
+/* Nutrient SDK Container */
+.nutrient-viewer-container {
+  flex: 1;
+  width: 100%;
+  min-height: 500px;
+  height: calc(100vh - 80px);
+  border: none;
+  background: white;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Loading States */
+.loading-container, .error-container {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
+.loading-container {
+  flex-direction: column;
+  text-align: center;
+}
+
+.loading-container p {
+  margin-top: 1rem;
+  color: #666;
+  font-size: 1rem;
+}
+
+.error-container {
+  position: absolute;
+  top: 60px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-message {
+  text-align: center;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+  max-width: 500px;
+  border-left: 4px solid #dc3545;
+}
+
+.error-message h4 {
+  color: #dc3545;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+}
+
+.error-message p {
+  color: #666;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+.error-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+/* Loading Spinner */
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #007bff;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Ensure the Nutrient SDK integrates well */
+.nutrient-viewer-container iframe {
+  border: none !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Custom scrollbars for better UX */
+.pdf-viewer::-webkit-scrollbar {
+  width: 8px;
+}
+
+.pdf-viewer::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.pdf-viewer::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .viewer-header {
+    padding: 0.75rem;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: auto;
+  }
+
+  .viewer-header h3 {
+    font-size: 1rem;
+    max-width: 100%;
+  }
+
+  .viewer-controls {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .close-btn {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+
+  .nutrient-viewer-container {
+    height: calc(100vh - 100px);
+  }
+
+  .error-message {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+
+  .error-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .error-actions button,
+  .error-actions a {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .nutrient-viewer-container {
+    /* Ensure crisp rendering on high DPI displays */
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Focus states for accessibility */
+.close-btn:focus,
+.retry-btn:focus,
+.view-pdf-btn:focus {
+  outline: 2px solid #007bff;
+  outline-offset: 2px;
+}

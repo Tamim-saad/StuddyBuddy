@@ -1,124 +1,278 @@
 // src/components/PDFAnnotator.jsx
 import React, { useEffect, useRef, useState } from "react";
-import WebViewer from "@pdftron/webviewer";
-import annotationService from "../services/annotationService";
+import { annotationService } from "../services/annotationService";
 import "./PDFAnnotator.css";
 
 const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
-  const viewer = useRef(null);
+  const containerRef = useRef(null);
   const [instance, setInstance] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   useEffect(() => {
-    const initializeViewer = async () => {
+    const initializeNutrientViewer = async () => {
       try {
-        const pdfUrl = annotationService.getPDFUrl(filePath);
+        setIsLoading(true);
+        setError(null);
+
+        // Ensure container exists and has dimensions
+        const container = document.getElementById('pdf-annotator-container');
+        if (!container) {
+          throw new Error("PDF container element not found");
+        }
+
+        console.log("Container element:", container);
+        console.log("Container dimensions:", {
+          width: container.offsetWidth,
+          height: container.offsetHeight
+        });
+
+        // Import Nutrient SDK dynamically
+        const NutrientSDK = await import("@nutrient-sdk/viewer");
+        console.log("Nutrient SDK loaded:", NutrientSDK);
         
-        const viewerInstance = await WebViewer({
-          path: '/lib',
-          initialDoc: pdfUrl,
-          disabledElements: [
-            'ribbons',
-            'toggleNotesButton',
+        const pdfUrl = annotationService.getPDFUrl(filePath);
+        console.log("Loading PDF from:", pdfUrl);
+
+        // Test if PDF is accessible
+        try {
+          const response = await fetch(pdfUrl, { method: 'HEAD' });
+          if (!response.ok) {
+            throw new Error(`PDF not accessible: ${response.status} ${response.statusText}`);
+          }
+          console.log("PDF is accessible");
+        } catch (fetchError) {
+          console.error("PDF fetch test failed:", fetchError);
+          throw new Error(`Cannot access PDF file: ${fetchError.message}`);
+        }
+        
+        // Initialize Nutrient Web SDK for annotation
+        const viewer = await NutrientSDK.load({
+          container: '#pdf-annotator-container', // Use CSS selector instead of ref
+          document: pdfUrl,
+          // Configuration for annotation functionality
+          initialViewState: {
+            enableAnnotationCreation: true,
+            enableDocumentEditing: true,
+            showToolbar: true,
+            showAnnotationCreationTools: true,
+          },
+          // Customize UI with annotation tools
+          baseUrl: `${window.location.origin}/nutrient-sdk/`,
+          // Full annotation toolbar
+          toolbarItems: [
+            'sidebar-thumbnails',
+            'sidebar-document-outline',
+            'sidebar-annotations',
+            'spacer',
+            'zoom-out',
+            'zoom-in',
+            'zoom-mode',
+            'spacer',
+            'pan',
+            'search',
+            'spacer',
+            'annotate',
+            'spacer',
+            'text',
+            'highlight',
+            'strikeout',
+            'underline',
+            'spacer',
+            'ink',
+            'spacer',
+            'line',
+            'rectangle',
+            'ellipse',
+            'spacer',
+            'note',
+            'spacer',
+            'print',
+            'download'
           ],
-        }, viewer.current);
-
-        const { documentViewer, annotationManager } = viewerInstance.Core;
-
-        // Track changes
-        annotationManager.addEventListener('annotationChanged', () => {
-          setHasUnsavedChanges(true);
         });
 
-        // Wait for document to load
-        documentViewer.addEventListener('documentLoaded', () => {
-          console.log('PDF loaded successfully');
+        console.log("Nutrient SDK viewer initialized:", viewer);
+
+        // Set up event listeners for tracking changes
+        viewer.addEventListener("annotationsChange", () => {
+          console.log("Annotations changed");
         });
 
-        setInstance(viewerInstance);
-      } catch (error) {
-        console.error('Error initializing PDF viewer:', error);
+        viewer.addEventListener("documentLoaded", () => {
+          console.log("Document loaded successfully");
+          setIsLoading(false);
+        });
+
+        viewer.addEventListener("documentLoadFailed", (error) => {
+          console.error("Document load failed:", error);
+          setError("Failed to load PDF document. Please check the file path and try again.");
+          setIsLoading(false);
+        });
+
+        setInstance(viewer);
+
+      } catch (err) {
+        console.error("Error initializing PDF annotation viewer:", err);
+        setError(`Failed to load PDF annotation viewer: ${err.message}`);
+        setIsLoading(false);
       }
     };
 
-    initializeViewer();
+    // Add a small delay to ensure the container is fully rendered
+    const timeoutId = setTimeout(initializeNutrientViewer, 100);
 
-    // Cleanup
     return () => {
-      if (instance) {
-        instance.dispose();
-      }
+      clearTimeout(timeoutId);
     };
-  }, [filePath]); // instance is managed within the effect
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const saveAnnotations = async () => {
-    if (!instance || !hasUnsavedChanges) return;
-    
-    setIsSaving(true);
+  // Separate effect to handle file path changes  
+  useEffect(() => {
+    if (instance && filePath) {
+      // If we need to load a different file, dispose current instance and reinitialize
+      console.log("File path changed, reinitializing viewer");
+      instance.dispose();
+      setInstance(null);
+      setIsLoading(true);
+      
+      // Trigger reinitialization after cleanup
+      setTimeout(() => {
+        window.location.reload(); // Simple approach for now
+      }, 100);
+    }
+  }, [filePath]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleSave = async () => {
+    if (!instance) return;
+
     try {
-      const { documentViewer } = instance.Core;
-      const doc = documentViewer.getDocument();
+      setIsSaving(true);
       
-      // Export annotated PDF as blob
-      const data = await doc.getFileData({ 
-        downloadType: 'pdf',
-        includeAnnotations: true 
-      });
+      // Export the annotated PDF
+      const annotatedPDF = await instance.exportPDF();
       
-      const blob = new Blob([data], { type: 'application/pdf' });
+      // Convert to blob
+      const blob = new Blob([annotatedPDF], { type: 'application/pdf' });
       
-      // Save to backend (saves as new file, keeps original)
+      // Save using our annotation service
       const result = await annotationService.saveAnnotatedPDF(fileId, blob);
       
-      setHasUnsavedChanges(false);
+      console.log("Annotations saved successfully:", result);
       
-      // Notify parent component with both original and annotated file info
-      if (onSave) onSave(result);
+      // Call parent callback
+      if (onSave) {
+        onSave(result);
+      }
       
-      alert(`Annotations saved successfully!\nOriginal: ${result.originalFile.title}\nAnnotated: ${result.annotatedFile.title}`);
-    } catch (error) {
-      console.error('Error saving annotations:', error);
-      alert('Failed to save annotations: ' + error.message);
+    } catch (err) {
+      console.error("Error saving annotations:", err);
+      setError("Failed to save annotations. Please try again.");
     } finally {
       setIsSaving(false);
     }
   };
 
   const handleClose = () => {
-    if (hasUnsavedChanges) {
-      const shouldClose = window.confirm(
-        'You have unsaved changes. Are you sure you want to close?'
-      );
-      if (!shouldClose) return;
+    if (instance) {
+      try {
+        instance.dispose();
+      } catch (err) {
+        console.error("Error disposing Nutrient SDK instance:", err);
+      }
     }
-    
-    if (onClose) onClose();
+    onClose();
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <div className="pdf-annotator">
+        <div className="annotator-header">
+          <h3>PDF Annotator</h3>
+          <button onClick={handleClose} className="close-btn">
+            Close
+          </button>
+        </div>
+        <div className="loading-container">
+          <div className="loading-spinner"></div>
+          <p>Loading PDF annotation editor...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state
+  if (error) {
+    return (
+      <div className="pdf-annotator">
+        <div className="annotator-header">
+          <h3>PDF Annotator</h3>
+          <button onClick={handleClose} className="close-btn">
+            Close
+          </button>
+        </div>
+        <div className="error-container">
+          <div className="error-message">
+            <h4>⚠️ Error Loading PDF</h4>
+            <p>{error}</p>
+            <div className="error-actions">
+              <button onClick={() => window.location.reload()} className="retry-btn">
+                Retry
+              </button>
+              <a 
+                href={annotationService.getPDFUrl(filePath)} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="view-pdf-btn"
+              >
+                📄 View PDF Instead
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main component render
   return (
     <div className="pdf-annotator">
       <div className="annotator-header">
         <h3>PDF Annotator</h3>
         <div className="annotator-controls">
           <button 
-            onClick={saveAnnotations} 
-            disabled={isSaving || !hasUnsavedChanges}
-            className={`save-btn ${hasUnsavedChanges ? 'has-changes' : ''}`}
+            onClick={handleSave} 
+            disabled={isSaving}
+            className="save-btn"
           >
-            {isSaving ? 'Saving...' : 'Save Annotations'}
+            {isSaving ? 'Saving...' : '💾 Save Annotations'}
           </button>
           <button onClick={handleClose} className="close-btn">
-            Close
+            ✕ Close
           </button>
         </div>
       </div>
       
-      <div className="webviewer-container" ref={viewer}></div>
+      {/* Nutrient SDK Container */}
+      <div 
+        id="pdf-annotator-container"
+        ref={containerRef} 
+        className="nutrient-container"
+        style={{ 
+          width: '100%', 
+          height: 'calc(100vh - 80px)',
+          border: 'none'
+        }}
+      />
       
-      {hasUnsavedChanges && (
-        <div className="unsaved-indicator">
-          Unsaved changes
+      {isSaving && (
+        <div className="saving-overlay">
+          <div className="saving-message">
+            <div className="loading-spinner"></div>
+            <span>Saving annotations...</span>
+          </div>
         </div>
       )}
     </div>
