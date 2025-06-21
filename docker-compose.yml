@@ -1,0 +1,40 @@
+version: "3.8"
+services:
+  db:
+    image: postgres:16
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: Reset321
+      POSTGRES_DB: StuddyBuddy
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+
+  backend:
+    build: ./backend
+    environment:
+      - PORT=4000
+      - POSTGRES_URI=postgresql://postgres:Reset321@db:5432/StuddyBuddy
+      - JWT_SECRET=34uhhfid8u345bfdjfiu3446346y
+      - FRONTEND_URL=http://localhost:3000
+      - BACKEND_URL=http://localhost:4000
+      # Add other env vars as needed
+    depends_on:
+      - db
+    ports:
+      - "4000:4000"
+
+  frontend:
+    build: ./frontend
+    environment:
+      - REACT_APP_BASE_URL=http://localhost:4000
+      - REACT_APP_GOOGLE_CLIENT_ID=1019060132363-j6q22t0jdbrp86nbm3gov2nlusl1g834.apps.googleusercontent.com
+    depends_on:
+      - backend
+    ports:
+      - "3000:3000"
+
+volumes:
+  db_data:
