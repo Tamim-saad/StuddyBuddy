@@ -133,24 +133,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-// GET /:id - get user by id (without password_hash)
-router.get("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await pool.query(
-      "SELECT id, name, email, avatar_url, created_at FROM users WHERE id = $1",
-      [id]
-    );
-    const user = result.rows[0];
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
-    res.json(user);
-  } catch (error) {
-    console.error("Get user by id error:", error);
-    res.status(500).json({ message: "Something went wrong" });
-  }
-});
+
 
 // PUT /profile - update user profile
 router.put("/profile", authenticateToken, async (req, res) => {
@@ -264,5 +247,22 @@ router.get("/profile", authenticateToken, async (req, res) => {
     res.status(500).json({ message: "Error retrieving profile" });
   }
 });
-
+// GET /:id - get user by id (without password_hash)
+router.get("/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query(
+      "SELECT id, name, email, avatar_url, created_at FROM users WHERE id = $1",
+      [id]
+    );
+    const user = result.rows[0];
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json(user);
+  } catch (error) {
+    console.error("Get user by id error:", error);
+    res.status(500).json({ message: "Something went wrong" });
+  }
+});
 module.exports = router;
