@@ -12,18 +12,16 @@ services:
     volumes:
       - db_data:/var/lib/postgresql/data
 
-
   backend:
     build: ./backend
     ports:
       - "4000:4000"
     environment:
-     PORT: 4000
+      - PORT=4000
       - POSTGRES_URI=postgresql://postgres:Reset321@db:5432/StuddyBuddy
       - JWT_SECRET=34uhhfid8u345bfdjfiu3446346y
     depends_on:
-      - db 
-  
+      - db
 
   frontend:
     build: ./frontend
@@ -34,7 +32,6 @@ services:
       - backend
     ports:
       - "3000:3000"
-
 
 volumes:
   db_data:
