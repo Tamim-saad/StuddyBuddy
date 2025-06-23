@@ -59,7 +59,7 @@ export const uploadService = {
     else console.log("Indexing response:", response.data);
     return response.data;
   },
-  
+
   async searchFiles(query) {
     const accessToken = authServices.getAccessToken();
     const response = await axios.get(`${API_BASE_URL}/api/uploads/search`, {
@@ -70,6 +70,7 @@ export const uploadService = {
         'Authorization': `Bearer ${accessToken}`
       }
     });
+    console.log("Search response:", response.data);
     
     if (response.status !== 200) {
       throw new Error('File search failed');

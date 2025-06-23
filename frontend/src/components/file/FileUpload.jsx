@@ -167,13 +167,16 @@ export const FileUpload = () => {
         setSearchResults(null);
         return;
       }
-      
+      setLoading(true);
       // Call the search API
       const results = await uploadService.searchFiles(query);
       setSearchResults(results.files || []);
     } catch (error) {
       console.error('Search error:', error);
       setSearchResults(null);
+    }
+    finally {
+      setLoading(false);
     }
   }, []);
   const filteredFiles = searchResults || (files?.filter(file => {
