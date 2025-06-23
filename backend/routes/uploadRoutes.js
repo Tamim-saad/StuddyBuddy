@@ -122,6 +122,42 @@ router.get('/', authenticateToken, async (req, res) => {
   }
 });
 
+// Search files route
+router.get('/search', authenticateToken, async (req, res) => {
+  try {
+    const { query } = req.query;
+    const userId = req.user.id;
+
+    if (!query) {
+      return res.status(400).json({ error: 'Search query is required' });
+    }
+
+    const result = await pool.query(
+      `SELECT 
+        c.*,
+        u.name as uploaded_by_name,
+        u.avatar_url as uploaded_by_avatar
+       FROM chotha c
+       LEFT JOIN users u ON c.user_id = u.id
+       WHERE c.user_id = $1 
+       AND (
+         c.title ILIKE $2 OR
+         c.type ILIKE $2
+       )
+       ORDER BY c.date_uploaded DESC`,
+      [userId, `%${query}%`]
+    );
+
+    res.json({
+      files: result.rows,
+      totalCount: result.rows.length
+    });
+  } catch (error) {
+    console.error('Search error:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
 // Start indexing route
 router.post('/:id/index', authenticateToken, async (req, res) => {
   try {

@@ -5,10 +5,12 @@ import { SearchBar } from '../files/SearchBar';
 import { FileList } from '../files/FileList';
 import { UploadButton } from './UploadButton';
 import { uploadService } from '../../services';
+import { useCallback } from 'react';
 
 export const FileUpload = () => {
   const [files, setFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -118,6 +120,7 @@ export const FileUpload = () => {
       });
     }
   };
+  
 
   const handleStartIndexing = async (fileId) => {
     try {
@@ -157,13 +160,28 @@ export const FileUpload = () => {
     }
   };
 
-  const handleSearch = (query) => {
-    setSearchQuery(query);
-  };
-
-  const filteredFiles = files?.filter(file =>
-    file?.title?.toLowerCase().includes(searchQuery.toLowerCase())
-  ) || [];
+  const handleSearch = useCallback(async (query) => {
+    try {
+      setSearchQuery(query);
+      if (!query) {
+        setSearchResults(null);
+        return;
+      }
+      
+      // Call the search API
+      const results = await uploadService.searchFiles(query);
+      setSearchResults(results.files || []);
+    } catch (error) {
+      console.error('Search error:', error);
+      setSearchResults(null);
+    }
+  }, []);
+  const filteredFiles = searchResults || (files?.filter(file => {
+    if (!file || !file.title) return false;
+    return file.title.toLowerCase().includes(
+      (typeof searchQuery === 'string' ? searchQuery : '').toLowerCase()
+    );
+  }) || []);
 
   return (
     <Box sx={{ p: 10, margin: 6 }}>
