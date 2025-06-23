@@ -5,6 +5,7 @@ import Sidebar from "../components/Board/sidebar/sidebar";
 import { Dashboard } from "../components/project/Dashboard";
 import { UserProfile } from "../components/auth/UserProfile";
 import propTypes from "prop-types";
+import { FileUpload } from "../components/file/FileUpload";
 const Layout = () => {
   return (
     <div className="flex">
@@ -40,6 +41,10 @@ export const router = createBrowserRouter([
       {
         path: "profile",
         element: <UserProfile />,
+      },
+      {
+        path: "uploads",
+        element: <FileUpload />,
       },
 
     ],

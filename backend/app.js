@@ -16,13 +16,16 @@ const corsOptions = {
 app.use(helmet());
 app.use(cors(corsOptions));
 app.use(bodyParser.json());
+app.use('/uploads', express.static('uploads'));
 
 // Route imports
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
+const uploadRoutes = require("./routes/uploadRoutes");
 // Mount routes
 
 app.use("/api/user", userRoutes);
+app.use("/api/uploads", uploadRoutes);
 
 app.use("/auth", authRoutes);
 app.get("/", (req, res) => {

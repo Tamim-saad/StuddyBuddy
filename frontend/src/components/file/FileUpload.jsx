@@ -1,119 +1,233 @@
-import React, { useState } from "react";
-import { authServices } from "../../auth";
-import PropTypes from "prop-types";
-export const FileUpload = ({ taskId, onFileUploaded }) => {
-  const [file, setFile] = useState(null);
-  const [uploading, setUploading] = useState(false);
-  const [error, setError] = useState(null);
-  const [progress, setProgress] = useState(0);
+import React, { useState, useEffect } from 'react';
+import { Box, Typography, LinearProgress } from '@mui/material';
+import { CircularProgress } from "../../common/icons"; // Ensure you have this component
+import { SearchBar } from '../files/SearchBar';
+import { FileList } from '../files/FileList';
+import { UploadButton } from './UploadButton';
+import { uploadService } from '../../services';
 
-  const currentUser = authServices.getAuthUser();
+export const FileUpload = () => {
+  const [files, setFiles] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFiles, setSelectedFiles] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [isUploading, setIsUploading] = useState(false); // To track if file upload is in progress
+  const [indexingFiles, setIndexingFiles] = useState(new Set());
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
+  useEffect(() => {
+    loadFiles();
+  }, []);
 
-    if (selectedFile) {
-      // Check file size (10MB limit)
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        setError("File size exceeds 10MB limit");
-        setFile(null);
-        return;
-      }
-
-      setFile(selectedFile);
-      setError(null);
+  const loadFiles = async () => {
+    try {
+      setLoading(true);
+      const response = await uploadService.getFiles();
+      
+      // No need for simulated progress when loading files
+      setFiles(Array.isArray(response.files) ? response.files : []);
+    } catch (error) {
+      console.error('Error loading files:', error);
+      setFiles([]); // Set to empty array on error
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleUpload = async (e) => {
-    e.preventDefault();
-
-    if (!file) {
-      setError("Please select a file");
-      return;
-    }
-
+  const handleFileUpload = async (file) => {
     try {
-      setUploading(true);
-      setProgress(10);
+      setUploadProgress(0);
+      setIsUploading(true);
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("userId", currentUser._id);
+      // Configure simulation parameters
+      const simulatedUploadDuration = 8000; // 8 seconds for smoother simulation
+      const intervalDuration = 30; // More frequent updates (30ms)
+      const initialDelay = 500; // Initial delay before starting
+      const completionDelay = 800; // Delay after reaching 100%
+      
+      let progress = 0;
+      let uploadInterval;
 
-      setProgress(30);
+      // Add initial delay for better UX
+      await new Promise(resolve => setTimeout(resolve, initialDelay));
 
-      const response = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/files/upload/${taskId}`,
-        {
-          method: "POST",
-          body: formData,
-          // No Content-Type header is needed as it will be set automatically
+      // Start simulated progress with easing
+      const startSimulatedProgress = () => {
+        uploadInterval = setInterval(() => {
+          if (progress < 90) { // Only simulate up to 85%
+            // Use easing function for smoother progress
+            const remainingProgress = 85 - progress;
+            const increment = Math.max(0.1, remainingProgress * 0.05);
+            progress += increment;
+            setUploadProgress(Math.round(progress));
+          }
+        }, intervalDuration);
+      };
+
+      // Start progress simulation
+      startSimulatedProgress();
+
+      // Actual file upload
+      const response = await uploadService.uploadFile(file, {
+        onUploadProgress: (progressEvent) => {
+          const actualProgress = Math.round(
+            (progressEvent.loaded * 100) / progressEvent.total
+          );
+          // Smooth transition between simulated and actual progress
+          if (actualProgress > progress) {
+            progress = actualProgress;
+            setUploadProgress(progress);
+          }
         }
+      });
+
+      // Clear simulation interval
+      clearInterval(uploadInterval);
+
+      // Smooth completion animation
+      setUploadProgress(95); // Jump to near completion
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setUploadProgress(98);
+      await new Promise(resolve => setTimeout(resolve, 200));
+      setUploadProgress(100);
+
+      // Show completion state
+      await new Promise(resolve => setTimeout(resolve, completionDelay));
+
+      // Update files list with new file
+      if (response?.data) {
+        setFiles(prevFiles => {
+          const newFile = response.data;
+          return Array.isArray(prevFiles) ? [newFile, ...prevFiles] : [newFile];
+        });
+      }
+
+    } catch (error) {
+      console.error('Upload error:', error);
+      // Show error state briefly
+      setUploadProgress(0);
+      await new Promise(resolve => setTimeout(resolve, 500));
+    } finally {
+      setIsUploading(false);
+      // Smooth reset
+      setUploadProgress(prev => {
+        if (prev === 100) {
+          return 0;
+        }
+        return prev;
+      });
+    }
+  };
+
+  const handleStartIndexing = async (fileId) => {
+    try {
+      setIndexingFiles(prev => new Set([...prev, fileId]));
+      
+      // Update file status locally
+      setFiles(prevFiles => 
+        prevFiles.map(file => 
+          file.id === fileId 
+            ? { ...file, indexing_status: 'processing' }
+            : file
+        )
       );
 
-      setProgress(90);
+      // Simulate indexing progress
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      // Start actual indexing
+      await uploadService.startIndexing(fileId);
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Error uploading file");
-      }
-
-      const data = await response.json();
-      setProgress(100);
-      setFile(null);
-      alert("File uploaded successfully");
-      // Call the callback function to update parent component
-      if (onFileUploaded) {
-        onFileUploaded(data);
-      }
-    } catch (err) {
-      console.error("Error uploading file:", err);
-      setError(err.message || "Error uploading file");
+      // Update file status after completion
+      setFiles(prevFiles => 
+        prevFiles.map(file => 
+          file.id === fileId 
+            ? { ...file, indexing_status: 'completed' }
+            : file
+        )
+      );
+    } catch (error) {
+      console.error('Indexing error:', error);
     } finally {
-      setUploading(false);
+      setIndexingFiles(prev => {
+        const next = new Set(prev);
+        next.delete(fileId);
+        return next;
+      });
     }
   };
 
+  const handleSearch = (query) => {
+    setSearchQuery(query);
+  };
+
+  const filteredFiles = files?.filter(file =>
+    file?.title?.toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
+
   return (
-    <div className="mt-4">
-      <form onSubmit={handleUpload} className="flex flex-col space-y-2">
-        <div className="flex items-center border rounded p-2">
-          <input
-            type="file"
-            onChange={handleFileChange}
-            className="flex-1 text-sm"
-            disabled={uploading}
+    <Box sx={{ p: 10, margin: 6 }}>
+      <Typography variant="h5" sx={{ mb: 2, color: 'purple' }}>
+        Uploads
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 3, color: 'gray' }}>
+        Manage all your uploads here!
+      </Typography>
+
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 3 }}>
+        <UploadButton onUpload={handleFileUpload} />
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <SearchBar onSearch={handleSearch} />
+        </Box>
+      </Box>
+
+      {/* Display upload progress bar only when uploading */}
+      {isUploading && (
+        <Box sx={{ width: '100%', mb: 2 }}>
+          <LinearProgress 
+            variant="determinate" 
+            value={uploadProgress} 
+            sx={{
+              height: 8,
+              borderRadius: 5,
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)', // Smooth easing
+              backgroundColor: 'rgba(128, 0, 128, 0.1)', // Light purple background
+              '& .MuiLinearProgress-bar': {
+                backgroundColor: 'purple',
+                transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)' // Match transition
+              }
+            }}
           />
-          <button
-            type="submit"
-            className={`ml-2 px-4 py-1 text-white rounded ${
-              uploading ? "bg-gray-400" : "bg-blue-500 hover:bg-blue-600"
-            }`}
-            disabled={uploading || !file}
+          <Typography 
+            variant="body2" 
+            color="textSecondary" 
+            align="center" 
+            sx={{ mt: 1 }}
           >
-            {uploading ? "Uploading..." : "Upload"}
-          </button>
-        </div>
+            {`${Math.round(uploadProgress)}%`}
+          </Typography>
+        </Box>
+      )}
 
-        {error && <div className="text-red-500 text-sm">{error}</div>}
-
-        {uploading && (
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div
-              className="bg-blue-600 h-2.5 rounded-full"
-              style={{ width: `${progress}%` }}
-            ></div>
-          </div>
-        )}
-
-        <div className="text-xs text-gray-500">Max file size: 10MB</div>
-      </form>
-    </div>
+      {/* Display loading spinner or file list */}
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+          <CircularProgress size={40} sx={{ color: 'purple' }} />
+        </Box>
+      ) : (
+        <FileList 
+          files={filteredFiles}
+          selectedFiles={selectedFiles}
+          onSelectFile={(id) => {
+            setSelectedFiles(prev => 
+              prev.includes(id) 
+                ? prev.filter(fileId => fileId !== id)
+                : [...prev, id]
+            );
+          }}
+          onStartIndexing={handleStartIndexing}
+        />
+      )}
+    </Box>
   );
-};
-
-FileUpload.propTypes = {
-  taskId: PropTypes.string.isRequired,
-  onFileUploaded: PropTypes.func,
 };

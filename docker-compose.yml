@@ -1,4 +1,5 @@
 version: "3.8"
+
 services:
   db:
     image: postgres:16
@@ -17,17 +18,17 @@ services:
     ports:
       - "4000:4000"
     environment:
-      - PORT=4000
-      - POSTGRES_URI=postgresql://postgres:Reset321@db:5432/StuddyBuddy
-      - JWT_SECRET=34uhhfid8u345bfdjfiu3446346y
+      PORT: 4000
+      POSTGRES_URI: postgresql://postgres:Reset321@db:5432/StuddyBuddy
+      JWT_SECRET: 34uhhfid8u345bfdjfiu3446346y
     depends_on:
       - db
 
   frontend:
     build: ./frontend
     environment:
-      - REACT_APP_BASE_URL=http://20.82.120.98:4000
-      - REACT_APP_GOOGLE_CLIENT_ID=1019060132363-j6q22t0jdbrp86nbm3gov2nlusl1g834.apps.googleusercontent.com
+      REACT_APP_BASE_URL: http://localhost:4000
+      REACT_APP_GOOGLE_CLIENT_ID: 1019060132363-j6q22t0jdbrp86nbm3gov2nlusl1g834.apps.googleusercontent.com
     depends_on:
       - backend
     ports:
