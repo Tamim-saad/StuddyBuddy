@@ -104,6 +104,7 @@ jobs:
         echo "COMPOSE_PROJECT_NAME=studdybuddy" >> .env
         
         # Test building the images
+        # GitHub Actions runners use Docker Compose V2
         docker compose build --no-cache
 
   deploy:
@@ -185,7 +186,7 @@ jobs:
           
           # Stop existing containers
           print_status "Stopping existing containers..."
-          docker compose down || true
+          docker-compose down || true
           
           # Clean up Docker resources
           print_status "Cleaning up Docker resources..."
@@ -193,7 +194,7 @@ jobs:
           
           # Build and start new containers
           print_status "Building and starting containers..."
-          docker compose up -d --build --remove-orphans
+          docker-compose up -d --build --remove-orphans
           
           # Wait for services to be ready
           print_status "Waiting for services to start..."
@@ -201,7 +202,7 @@ jobs:
           
           # Check deployment status
           print_status "Checking deployment status..."
-          docker compose ps
+          docker-compose ps
           
           # Health check
           print_status "Running health checks..."
@@ -211,7 +212,7 @@ jobs:
               print_success "Backend is healthy"
           else
               print_error "Backend health check failed"
-              docker compose logs backend
+              docker-compose logs backend
           fi
           
           # Check frontend
@@ -219,7 +220,7 @@ jobs:
               print_success "Frontend is accessible"
           else
               print_error "Frontend health check failed"
-              docker compose logs frontend
+              docker-compose logs frontend
           fi
           
           print_success "Deployment completed!"
@@ -229,4 +230,4 @@ jobs:
           echo "   Backend API: http://${{ secrets.AZURE_VM_IP }}:4000"
           echo ""
           echo "📊 Container Status:"
-          docker compose ps
+          docker-compose ps
