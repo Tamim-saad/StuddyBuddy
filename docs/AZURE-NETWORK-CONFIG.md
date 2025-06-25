@@ -117,13 +117,13 @@ sudo netstat -tuln | grep -E ":80|:4000"
 ### 2. Test External Access
 ```bash
 # From outside your VM:
-curl -I http://135.235.137.78          # Should return HTTP headers
-curl -I http://135.235.137.78:4000     # Should return API response
+curl -I http://YOUR-VM-PUBLIC-IP          # Should return HTTP headers
+curl -I http://YOUR-VM-PUBLIC-IP:4000     # Should return API response
 ```
 
 ### 3. Test from Browser
-- Frontend: http://135.235.137.78
-- Backend API: http://135.235.137.78:4000
+- Frontend: http://YOUR-VM-PUBLIC-IP
+- Backend API: http://YOUR-VM-PUBLIC-IP:4000
 
 ## 🛡️ Security Considerations
 

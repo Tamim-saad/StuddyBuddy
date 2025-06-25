@@ -7,7 +7,7 @@ This guide will help you set up continuous integration and deployment for Studdy
 
 ### 1. Azure VM Setup
 - ✅ Ubuntu 20.04+ VM with 2+ GB RAM
-- ✅ Public IP: 135.235.137.78 (configured)
+- ✅ Public IP: YOUR-VM-PUBLIC-IP (configured)
 - ✅ PostgreSQL installed and running
 - ✅ Docker & Docker Compose installed
 
@@ -18,13 +18,13 @@ You need to configure the following secrets in your GitHub repository:
 
 | Secret Name | Description | Example Value |
 |-------------|-------------|---------------|
-| `AZURE_VM_USERNAME` | Your VM username | `pridesys` |
+| `AZURE_VM_USERNAME` | Your VM username | `azureuser` |
 | `AZURE_VM_PRIVATE_KEY` | SSH private key for VM access | `-----BEGIN OPENSSH PRIVATE KEY-----...` |
-| `JWT_SECRET` | JWT secret for authentication | `34uhhfid8u345bfdjfiu3446346y` |
-| `EMAIL_USER` | Email for notifications | `habibarafique526@gmail.com` |
-| `EMAIL_PASS` | Email app password | `gplnfcyfrmxluhyc` |
-| `GEMINI_API_KEY` | Google Gemini API key | `AIzaSyDcsTky6ccPj_AxiWkZ5Xd_ybSX4f4bKpo` |
-| `REACT_APP_GOOGLE_CLIENT_ID` | Google OAuth client ID | `1019060132363-j6q...` |
+| `JWT_SECRET` | JWT secret for authentication | `your-super-secret-jwt-key-here` |
+| `EMAIL_USER` | Email for notifications | `your-email@gmail.com` |
+| `EMAIL_PASS` | Email app password | `your-email-app-password` |
+| `GEMINI_API_KEY` | Google Gemini API key | `your-gemini-api-key-here` |
+| `REACT_APP_GOOGLE_CLIENT_ID` | Google OAuth client ID | `your-google-client-id.apps.googleusercontent.com` |
 
 ## Setup Instructions
 
@@ -36,7 +36,7 @@ You need to configure the following secrets in your GitHub repository:
 
 2. Copy public key to your Azure VM:
    ```bash
-   ssh-copy-id username@135.235.137.78
+   ssh-copy-id username@YOUR-VM-PUBLIC-IP
    ```
 
 3. Add the private key content to GitHub secrets as `AZURE_VM_PRIVATE_KEY`
@@ -102,7 +102,7 @@ The workflow will automatically:
 ### Automatic Deployment (Recommended)
 1. Push code to `main` branch
 2. GitHub Actions will automatically deploy
-3. Check deployment status at: http://135.235.137.78
+3. Check deployment status at: http://YOUR-VM-PUBLIC-IP
 
 ### Manual Deployment
 ```bash
@@ -129,9 +129,9 @@ cd StuddyBuddy
 ```
 
 ### Health Check URLs:
-- Frontend: http://135.235.137.78
-- Backend API: http://135.235.137.78:4000
-- Health endpoint: http://135.235.137.78:4000/health
+- Frontend: http://YOUR-VM-PUBLIC-IP
+- Backend API: http://YOUR-VM-PUBLIC-IP:4000
+- Health endpoint: http://YOUR-VM-PUBLIC-IP:4000/health
 
 ## Database Considerations
 

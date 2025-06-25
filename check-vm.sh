@@ -5,6 +5,14 @@
 
 set -e
 
+# Load environment variables from .env file
+if [ -f ".env" ]; then
+    echo "📄 Loading configuration from .env file..."
+    export $(grep -v '^#' .env | xargs)
+else
+    echo "⚠️  .env file not found! Using default values..."
+fi
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -28,10 +36,10 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Configuration
-VM_IP="135.235.137.78"
+# Configuration from .env or defaults
+VM_IP="${VM_PUBLIC_IP:-localhost}"
 PROJECT_DIR="/home/$(whoami)/StuddyBuddy"
-BACKEND_PORT="4000"
+BACKEND_PORT="${PORT:-4000}"
 FRONTEND_PORT="80"
 
 echo "🔍 StuddyBuddy VM Health Check"

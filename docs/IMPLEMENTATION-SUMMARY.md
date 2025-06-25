@@ -5,7 +5,7 @@
 ### 1. **Analyzed Your Current Setup**
 - ✅ Reviewed your folder structure and Docker configuration
 - ✅ Examined your existing environment variables and database setup
-- ✅ Confirmed your Azure VM configuration (IP: 135.235.137.78)
+- ✅ Confirmed your Azure VM configuration (IP: YOUR-VM-PUBLIC-IP)
 
 ### 2. **Improved Deployment Script (`deploy.sh`)**
 - ✅ Fixed VM IP configuration for your Azure setup
@@ -43,7 +43,7 @@
    - Builds Docker images
    - Deploys to Azure VM
    - Performs health checks
-3. **Application is live** at http://135.235.137.78
+3. **Application is live** at http://YOUR-VM-PUBLIC-IP
 
 ### **Manual Deployment Option:**
 ```bash
@@ -59,13 +59,13 @@ You need to add these secrets to your GitHub repository:
 
 | Secret | Value | Location |
 |--------|-------|----------|
-| `AZURE_VM_USERNAME` | `pridesys` | From your VM |
-| `AZURE_VM_PRIVATE_KEY` | SSH private key | Generate with `ssh-keygen` |
-| `JWT_SECRET` | `34uhhfid8u345bfdjfiu3446346y` | From your .env |
-| `EMAIL_USER` | `habibarafique526@gmail.com` | From your .env |
-| `EMAIL_PASS` | `gplnfcyfrmxluhyc` | From your .env |
-| `GEMINI_API_KEY` | `AIzaSyDcsTky6ccPj_AxiWkZ5Xd_ybSX4f4bKpo` | From your .env |
-| `REACT_APP_GOOGLE_CLIENT_ID` | `1019060132363-j6q22t0jdbrp86nbm3gov2nlusl1g834.apps.googleusercontent.com` | From your .env |
+| `AZURE_VM_USERNAME` | `azureuser` | Your VM username |
+| `AZURE_VM_PRIVATE_KEY` | `[SSH PRIVATE KEY]` | Generate with `ssh-keygen` |
+| `JWT_SECRET` | `[REDACTED - SECURITY]` | Generate secure random string |
+| `EMAIL_USER` | `[REDACTED - SECURITY]` | Your email address |
+| `EMAIL_PASS` | `[REDACTED - SECURITY]` | Your email app password |
+| `GEMINI_API_KEY` | `[REDACTED - SECURITY]` | From Google AI Studio |
+| `REACT_APP_GOOGLE_CLIENT_ID` | `[REDACTED - SECURITY]` | From Google Cloud Console |
 
 **Add secrets at:** Repository → Settings → Secrets and variables → Actions
 
@@ -114,9 +114,9 @@ You need to add these secrets to your GitHub repository:
 
 ## 🌐 Your Application URLs
 
-- **Frontend:** http://135.235.137.78
-- **Backend API:** http://135.235.137.78:4000
-- **Health Check:** http://135.235.137.78:4000/health
+- **Frontend:** http://YOUR-VM-PUBLIC-IP
+- **Backend API:** http://YOUR-VM-PUBLIC-IP:4000
+- **Health Check:** http://YOUR-VM-PUBLIC-IP:4000/health
 
 ## 🔒 Security Features
 

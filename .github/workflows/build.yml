@@ -8,7 +8,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  VM_IP: '135.235.137.78'
+  VM_IP: ${{ secrets.AZURE_VM_IP }}
   PROJECT_DIR: '/home/azureuser/StuddyBuddy'
 
 jobs:
@@ -129,12 +129,12 @@ jobs:
           EMAIL_PASS=${{ secrets.EMAIL_PASS }}
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
           REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
-          REACT_APP_BASE_URL=http://135.235.137.78:4000
-          BACKEND_URL=http://135.235.137.78:4000
-          FRONTEND_URL=http://135.235.137.78
+          REACT_APP_BASE_URL=http://${{ secrets.AZURE_VM_IP }}:4000
+          BACKEND_URL=http://${{ secrets.AZURE_VM_IP }}:4000
+          FRONTEND_URL=http://${{ secrets.AZURE_VM_IP }}
           POSTGRES_URI=postgresql://postgres:postgres@localhost:5432/postgres
           COMPOSE_PROJECT_NAME=studdybuddy
-          VM_PUBLIC_IP=135.235.137.78
+          VM_PUBLIC_IP=${{ secrets.AZURE_VM_IP }}
           VM_PRIVATE_IP=10.1.0.4
           EOF
           

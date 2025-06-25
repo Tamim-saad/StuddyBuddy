@@ -8,7 +8,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  AZURE_VM_IP: '135.235.137.78'
+  AZURE_VM_IP: ${{ secrets.AZURE_VM_IP }}
 
 jobs:
   test:
@@ -170,16 +170,16 @@ jobs:
           REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
           
           # Azure VM URLs
-          REACT_APP_BASE_URL=http://135.235.137.78:4000
-          BACKEND_URL=http://135.235.137.78:4000
-          FRONTEND_URL=http://135.235.137.78
+          REACT_APP_BASE_URL=http://${{ secrets.AZURE_VM_IP }}:4000
+          BACKEND_URL=http://${{ secrets.AZURE_VM_IP }}:4000
+          FRONTEND_URL=http://${{ secrets.AZURE_VM_IP }}
           
           # Database Configuration (localhost since PostgreSQL is on same VM)
           POSTGRES_URI=postgresql://postgres:postgres@localhost:5432/postgres
           
           # Docker Configuration
           COMPOSE_PROJECT_NAME=studdybuddy
-          VM_PUBLIC_IP=135.235.137.78
+          VM_PUBLIC_IP=${{ secrets.AZURE_VM_IP }}
           VM_PRIVATE_IP=10.1.0.4
           EOF
           
@@ -225,8 +225,8 @@ jobs:
           print_success "Deployment completed!"
           echo ""
           echo "🌐 Application URLs:"
-          echo "   Frontend: http://135.235.137.78"
-          echo "   Backend API: http://135.235.137.78:4000"
+          echo "   Frontend: http://${{ secrets.AZURE_VM_IP }}"
+          echo "   Backend API: http://${{ secrets.AZURE_VM_IP }}:4000"
           echo ""
           echo "📊 Container Status:"
           docker-compose ps

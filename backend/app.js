@@ -10,8 +10,8 @@ const corsOptions = {
   origin: [
     "http://localhost:3000",      // Development
     "http://localhost",           // Local production
-    "http://135.235.137.78",      // Azure VM production
-    process.env.FRONTEND_URL      // Environment variable
+    process.env.FRONTEND_URL,     // Environment variable (Azure VM)
+    process.env.REACT_APP_BASE_URL?.replace(':4000', '') // Frontend URL without port
   ].filter(Boolean), // Remove any undefined values
   methods: ["GET", "POST", "PUT", "DELETE"],
   hideOptionsCall: true,

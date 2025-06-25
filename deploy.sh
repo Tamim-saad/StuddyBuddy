@@ -7,10 +7,19 @@ set -e  # Exit on any error
 
 echo "🚀 Starting StuddyBuddy Production Deployment..."
 
-# Configuration
+# Load environment variables from .env file
+if [ -f ".env" ]; then
+    echo "📄 Loading configuration from .env file..."
+    export $(grep -v '^#' .env | xargs)
+else
+    echo "⚠️  .env file not found! Please create one from .env.example"
+    exit 1
+fi
+
+# Configuration from .env
 PROJECT_DIR="/home/$(whoami)/StuddyBuddy"
 REPO_URL="https://github.com/Tamim-saad/StuddyBuddy.git"  # Your actual GitHub repository
-VM_IP="135.235.137.78"  # Your Azure VM public IP
+VM_IP="${VM_PUBLIC_IP:-localhost}"  # Use VM_PUBLIC_IP from .env or fallback
 
 # Colors for output
 RED='\033[0;31m'
@@ -70,34 +79,27 @@ setup_project() {
     print_success "Project setup complete"
 }
 
-# Create production environment file
-create_env_file() {
-    print_status "Creating production environment file..."
+# Verify environment file exists and has required variables
+verify_env_file() {
+    print_status "Verifying environment configuration..."
     
-    cat > .env << EOF
-# Production Environment Variables
-PORT=4000
-JWT_SECRET=34uhhfid8u345bfdjfiu3446346y
-EMAIL_USER=habibarafique526@gmail.com
-EMAIL_PASS=gplnfcyfrmxluhyc
-GEMINI_API_KEY=AIzaSyDcsTky6ccPj_AxiWkZ5Xd_ybSX4f4bKpo
-REACT_APP_GOOGLE_CLIENT_ID=1019060132363-j6q22t0jdbrp86nbm3gov2nlusl1g834.apps.googleusercontent.com
-
-# Azure VM URLs (Fixed IP)
-REACT_APP_BASE_URL=http://135.235.137.78:4000
-BACKEND_URL=http://135.235.137.78:4000
-FRONTEND_URL=http://135.235.137.78
-
-# Database Configuration (localhost since PostgreSQL is on same VM)
-POSTGRES_URI=postgresql://postgres:postgres@localhost:5432/postgres
-
-# Docker Configuration
-COMPOSE_PROJECT_NAME=studdybuddy
-VM_PUBLIC_IP=135.235.137.78
-VM_PRIVATE_IP=10.1.0.4
-EOF
+    if [ ! -f ".env" ]; then
+        print_error ".env file not found! Please create one from .env.example"
+        exit 1
+    fi
     
-    print_success "Environment file created for Azure VM IP: $VM_IP"
+    # Check for required variables
+    REQUIRED_VARS=("JWT_SECRET" "EMAIL_USER" "EMAIL_PASS" "GEMINI_API_KEY" "POSTGRES_URI" "VM_PUBLIC_IP")
+    
+    for var in "${REQUIRED_VARS[@]}"; do
+        if ! grep -q "^${var}=" .env; then
+            print_error "Required variable ${var} not found in .env file"
+            exit 1
+        fi
+    done
+    
+    print_success "Environment configuration verified"
+    print_status "Using VM IP: ${VM_PUBLIC_IP}"
 }
 
 # Deploy application
@@ -206,7 +208,7 @@ main() {
     
     check_docker
     setup_project
-    create_env_file
+    verify_env_file
     deploy_application
     check_health
     setup_firewall

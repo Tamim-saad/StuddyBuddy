@@ -96,15 +96,15 @@ The script will:
 1. **Create environment file:**
 ```bash
 # Update VM_IP with your actual VM IP address
-VM_IP="135.235.137.78"
+VM_IP="YOUR-VM-PUBLIC-IP"
 
 cat > .env << EOF
 PORT=4000
-JWT_SECRET=34uhhfid8u345bfdjfiu3446346y
-EMAIL_USER=habibarafique526@gmail.com
-EMAIL_PASS=gplnfcyfrmxluhyc
-GEMINI_API_KEY=AIzaSyDcsTky6ccPj_AxiWkZ5Xd_ybSX4f4bKpo
-REACT_APP_GOOGLE_CLIENT_ID=1019060132363-j6q22t0jdbrp86nbm3gov2nlusl1g834.apps.googleusercontent.com
+JWT_SECRET=your-super-secret-jwt-key-here
+EMAIL_USER=your-email@gmail.com
+EMAIL_PASS=your-email-app-password
+GEMINI_API_KEY=your-gemini-api-key-here
+REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 REACT_APP_BASE_URL=http://${VM_IP}:4000
 BACKEND_URL=http://${VM_IP}:4000
 FRONTEND_URL=http://${VM_IP}
@@ -130,7 +130,7 @@ Add these secrets in your GitHub repository settings:
 
 | Secret Name | Description | Example Value |
 |-------------|-------------|---------------|
-| `VM_HOST` | Your VM's IP address | `135.235.137.78` |
+| `VM_HOST` | Your VM's IP address | `YOUR-VM-PUBLIC-IP` |
 | `VM_USERNAME` | SSH username | `ubuntu` |
 | `VM_PRIVATE_KEY` | SSH private key content | `-----BEGIN RSA PRIVATE KEY-----...` |
 | `VM_PORT` | SSH port (optional) | `22` |

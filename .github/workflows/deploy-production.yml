@@ -7,7 +7,7 @@ on:
 
 env:
   NODE_VERSION: '20'
-  VM_IP: '135.235.137.78'
+  VM_IP: ${{ secrets.AZURE_VM_IP }}
   PROJECT_DIR: '/home/azureuser/StuddyBuddy'
 
 jobs:
