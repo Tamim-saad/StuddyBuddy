@@ -100,7 +100,7 @@ jobs:
     
     - name: Test Docker Build
       run: |
-        docker-compose build --no-cache
+        docker compose build --no-cache
     
     - name: Deploy to Azure VM
       uses: appleboy/ssh-action@v1.0.3
