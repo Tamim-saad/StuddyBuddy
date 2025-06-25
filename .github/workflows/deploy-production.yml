@@ -1,0 +1,137 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  VM_IP: '135.235.137.78'
+  PROJECT_DIR: '/home/azureuser/StuddyBuddy'
+
+jobs:
+  deploy:
+    name: Deploy to Azure VM
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Deploy to Azure VM
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.VM_HOST }}
+        username: ${{ secrets.VM_USER }}
+        key: ${{ secrets.VM_SSH_KEY }}
+        port: 22
+        command_timeout: 30m
+        script: |
+          echo "🚀 Starting deployment to Azure VM..."
+          
+          # Set error handling
+          set -e
+          
+          # Navigate to project directory or clone if doesn't exist
+          if [ -d "${{ env.PROJECT_DIR }}" ]; then
+            echo "📁 Project directory exists, updating..."
+            cd ${{ env.PROJECT_DIR }}
+            git fetch origin
+            git reset --hard origin/main
+            git clean -fd
+          else
+            echo "📁 Cloning repository..."
+            git clone https://github.com/${{ github.repository }}.git ${{ env.PROJECT_DIR }}
+            cd ${{ env.PROJECT_DIR }}
+          fi
+          
+          # Create production environment file
+          echo "🔧 Creating environment configuration..."
+          cat > .env << EOF
+          # Production Environment Variables
+          PORT=4000
+          JWT_SECRET=${{ secrets.JWT_SECRET }}
+          EMAIL_USER=${{ secrets.EMAIL_USER }}
+          EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
+          
+          # Azure VM URLs
+          REACT_APP_BASE_URL=http://${{ env.VM_IP }}:4000
+          BACKEND_URL=http://${{ env.VM_IP }}:4000
+          FRONTEND_URL=http://${{ env.VM_IP }}
+          
+          # Database Configuration
+          POSTGRES_URI=${{ secrets.POSTGRES_URI }}
+          
+          # Docker Configuration
+          COMPOSE_PROJECT_NAME=studdybuddy
+          VM_PUBLIC_IP=${{ env.VM_IP }}
+          VM_PRIVATE_IP=10.1.0.4
+          EOF
+          
+          # Stop existing containers
+          echo "🛑 Stopping existing containers..."
+          docker-compose down || true
+          
+          # Clean up old images and containers
+          echo "🧹 Cleaning up old Docker resources..."
+          docker system prune -f
+          docker volume prune -f
+          
+          # Build and start new containers
+          echo "🔨 Building and starting containers..."
+          docker-compose up -d --build --remove-orphans
+          
+          # Wait for services to be ready
+          echo "⏳ Waiting for services to start..."
+          sleep 60
+          
+          # Health check
+          echo "🏥 Performing health checks..."
+          
+          # Check backend health
+          for i in {1..10}; do
+            if curl -f http://localhost:4000/ >/dev/null 2>&1; then
+              echo "✅ Backend is healthy"
+              break
+            else
+              echo "⏳ Waiting for backend... (attempt $i/10)"
+              sleep 10
+            fi
+          done
+          
+          # Check frontend health
+          for i in {1..10}; do
+            if curl -f http://localhost/ >/dev/null 2>&1; then
+              echo "✅ Frontend is healthy"
+              break
+            else
+              echo "⏳ Waiting for frontend... (attempt $i/10)"
+              sleep 10
+            fi
+          done
+          
+          # Show final status
+          echo "📊 Final deployment status:"
+          docker-compose ps
+          
+          # Show recent logs
+          echo "📋 Recent logs:"
+          docker-compose logs --tail=20
+          
+          echo "🎉 Deployment completed successfully!"
+          echo "📱 Application URLs:"
+          echo "   Frontend: http://${{ env.VM_IP }}"
+          echo "   Backend API: http://${{ env.VM_IP }}:4000"
+    
+    - name: Notify deployment status
+      if: always()
+      run: |
+        if [ "${{ job.status }}" == "success" ]; then
+          echo "✅ Deployment successful!"
+        else
+          echo "❌ Deployment failed!"
+        fi

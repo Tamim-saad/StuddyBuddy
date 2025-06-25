@@ -1,21 +1,35 @@
-FROM node:20
+
+FROM node:20-alpine as build
 
 WORKDIR /app
 
+# Copy package files
 COPY package*.json ./
-RUN npm install
 
+# Install dependencies
+RUN npm ci
+
+# Copy source code
 COPY . .
 
+# Build arguments
 ARG REACT_APP_BASE_URL
+ARG REACT_APP_GOOGLE_CLIENT_ID
 ENV REACT_APP_BASE_URL=${REACT_APP_BASE_URL}
+ENV REACT_APP_GOOGLE_CLIENT_ID=${REACT_APP_GOOGLE_CLIENT_ID}
 
-# Build the React app
+# Build the app
 RUN npm run build
 
-# Serve with a simple static server
-RUN npm install -g serve
+# Production stage
+FROM nginx:alpine
 
-EXPOSE 3000
+# Copy built app to nginx
+COPY --from=build /app/build /usr/share/nginx/html
 
-CMD ["serve", "-s", "build", "-l", "3000"]
+# Copy nginx configuration
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
+EXPOSE 80
+
+CMD ["nginx", "-g", "daemon off;"]

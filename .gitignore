@@ -1,3 +1,71 @@
+# Dependencies
 /node_modules
+**/node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Testing
 /backend/coverage
+coverage/
+*.test.js.snap
+
+# Production builds
+build/
+dist/
+
+# Environment files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# SSH Keys and Security Files
+*.pem
+*.key
+*.ppk
+key.*
+id_rsa*
+id_ed25519*
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Optional npm cache directory
+.npm
+
+# SonarQube scanner work directory
 /.scannerwork
+
+# Docker volumes
+uploads_data/
+
+# Temporary files
+*.tmp
+*.temp

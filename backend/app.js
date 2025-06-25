@@ -7,7 +7,12 @@ const app = express();
 app.disable("x-powered-by");
 
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: [
+    "http://localhost:3000",      // Development
+    "http://localhost",           // Local production
+    "http://135.235.137.78",      // Azure VM production
+    process.env.FRONTEND_URL      // Environment variable
+  ].filter(Boolean), // Remove any undefined values
   methods: ["GET", "POST", "PUT", "DELETE"],
   hideOptionsCall: true,
   optiosSuccessStatus: 200

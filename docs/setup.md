@@ -32,13 +32,13 @@ In the `backend` directory, create a `.env` file with the following variables:
 
 ```ini
 PORT=4000
-MONGODB_URI=your_mongodb_connection_string
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-GMAIL_USER=your_email@gmail.com
-GMAIL_PASS=your_app_password
+POSTGRES_URI=postgresql://postgres:postgres@localhost:5432/postgres
+JWT_SECRET=your_jwt_secret_here
+EMAIL_USER=your_email@gmail.com
+EMAIL_PASS=your_app_password
 GEMINI_API_KEY=your_gemini_api_key
+REACT_APP_GOOGLE_CLIENT_ID=your_google_client_id
+REACT_APP_BASE_URL=http://localhost:4000
 ```
 
 ### ▶️ Start the Backend Server
