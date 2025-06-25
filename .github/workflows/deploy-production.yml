@@ -64,7 +64,7 @@ jobs:
           FRONTEND_URL=http://${{ env.VM_IP }}
           
           # Database Configuration
-          POSTGRES_URI=postgresql://postgres:postgres@host.docker.internal:5432/postgres
+          POSTGRES_URI=postgresql://postgres:postgres@10.1.0.4:5432/postgres
           
           # Docker Configuration
           COMPOSE_PROJECT_NAME=studdybuddy

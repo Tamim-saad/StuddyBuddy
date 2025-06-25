@@ -10,7 +10,7 @@ services:
     environment:
       NODE_ENV: production
       PORT: 4000
-      POSTGRES_URI: postgresql://postgres:postgres@host.docker.internal:5432/postgres
+      POSTGRES_URI: postgresql://postgres:postgres@10.1.0.4:5432/postgres
       JWT_SECRET: ${JWT_SECRET}
       EMAIL_USER: ${EMAIL_USER}
       EMAIL_PASS: ${EMAIL_PASS}
@@ -22,7 +22,7 @@ services:
     networks:
       - app-network
     extra_hosts:
-      - "host.docker.internal:host-gateway"
+      - "host.docker.internal:10.1.0.4"
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/"]
       interval: 30s

@@ -88,8 +88,8 @@ REACT_APP_BASE_URL=http://135.235.137.78:4000
 BACKEND_URL=http://135.235.137.78:4000
 FRONTEND_URL=http://135.235.137.78
 
-# Database Configuration (localhost since PostgreSQL is on same VM)
-POSTGRES_URI=postgresql://postgres:postgres@host.docker.internal:5432/postgres
+# Database Configuration (Using host IP since PostgreSQL is on same VM)
+POSTGRES_URI=postgresql://postgres:postgres@10.1.0.4:5432/postgres
 
 # Docker Configuration
 COMPOSE_PROJECT_NAME=studdybuddy

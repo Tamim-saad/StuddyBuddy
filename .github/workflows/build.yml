@@ -95,7 +95,7 @@ jobs:
         echo "REACT_APP_BASE_URL=http://${{ secrets.VM_HOST }}:4000" >> .env
         echo "BACKEND_URL=http://${{ secrets.VM_HOST }}:4000" >> .env
         echo "FRONTEND_URL=http://${{ secrets.VM_HOST }}" >> .env
-        echo "POSTGRES_URI=postgresql://postgres:postgres@host.docker.internal:5432/postgres" >> .env
+        echo "POSTGRES_URI=postgresql://postgres:postgres@10.1.0.4:5432/postgres" >> .env
         echo "COMPOSE_PROJECT_NAME=studdybuddy" >> .env
     
     - name: Test Docker Build
@@ -132,7 +132,7 @@ jobs:
           REACT_APP_BASE_URL=http://135.235.137.78:4000
           BACKEND_URL=http://135.235.137.78:4000
           FRONTEND_URL=http://135.235.137.78
-          POSTGRES_URI=postgresql://postgres:postgres@host.docker.internal:5432/postgres
+          POSTGRES_URI=postgresql://postgres:postgres@10.1.0.4:5432/postgres
           COMPOSE_PROJECT_NAME=studdybuddy
           VM_PUBLIC_IP=135.235.137.78
           VM_PRIVATE_IP=10.1.0.4
