@@ -139,7 +139,7 @@ router.get("/", async (req, res) => {
 router.put("/profile", authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, email } = req.body;
+    const { name, email, avatar } = req.body;
 
     // Validate email if provided
     let normalizedEmail = null;
@@ -171,6 +171,10 @@ router.put("/profile", authenticateToken, async (req, res) => {
     if (normalizedEmail) {
       fields.push(`email = $${idx++}`);
       values.push(normalizedEmail);
+    }
+    if (avatar !== undefined) {
+      fields.push(`avatar_url = $${idx++}`);
+      values.push(avatar);
     }
     if (fields.length === 0) {
       return res.status(400).json({ message: "No fields to update" });
