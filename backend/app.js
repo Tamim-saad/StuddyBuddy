@@ -13,9 +13,10 @@ const corsOptions = {
     process.env.FRONTEND_URL,     // Environment variable (Azure VM)
     process.env.REACT_APP_BASE_URL?.replace(':4000', '') // Frontend URL without port
   ].filter(Boolean), // Remove any undefined values
-  methods: ["GET", "POST", "PUT", "DELETE"],
-  hideOptionsCall: true,
-  optiosSuccessStatus: 200
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+  optionsSuccessStatus: 200
 };
 
 app.use(helmet());

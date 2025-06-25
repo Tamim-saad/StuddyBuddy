@@ -1,6 +1,10 @@
 import axios from "axios";
 import { appConfig } from "../common/config";
 
+// Configure axios defaults for CORS
+axios.defaults.withCredentials = true;
+axios.defaults.headers.common["Content-Type"] = "application/json";
+
 const saveAuthUser = (authUser) =>
   localStorage.setItem(appConfig.CURRENT_USER_KEY, JSON.stringify(authUser));
 

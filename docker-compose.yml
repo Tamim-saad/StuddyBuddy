@@ -35,6 +35,8 @@ services:
       EMAIL_PASS: ${EMAIL_PASS}
       GEMINI_API_KEY: ${GEMINI_API_KEY}
       REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID}
+      FRONTEND_URL: ${FRONTEND_URL}
+      REACT_APP_BASE_URL: ${REACT_APP_BASE_URL}
     volumes:
       - uploads_data:/app/uploads
     restart: unless-stopped
