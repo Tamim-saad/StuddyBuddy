@@ -88,8 +88,8 @@ REACT_APP_BASE_URL=http://135.235.137.78:4000
 BACKEND_URL=http://135.235.137.78:4000
 FRONTEND_URL=http://135.235.137.78
 
-# Database Configuration (Using host IP since PostgreSQL is on same VM)
-POSTGRES_URI=postgresql://postgres:postgres@10.1.0.4:5432/postgres
+# Database Configuration (localhost since PostgreSQL is on same VM)
+POSTGRES_URI=postgresql://postgres:postgres@localhost:5432/postgres
 
 # Docker Configuration
 COMPOSE_PROJECT_NAME=studdybuddy
@@ -103,37 +103,84 @@ EOF
 # Deploy application
 deploy_application() {
     print_status "Stopping existing containers..."
-    docker-compose down || true
+    docker-compose down --remove-orphans || true
     
     print_status "Cleaning up old images..."
     docker system prune -f
+    docker image prune -f || true
     
     print_status "Building and starting containers..."
-    docker-compose up -d --build --remove-orphans
+    docker-compose up -d --build --remove-orphans --force-recreate
     
     print_status "Waiting for services to start..."
-    sleep 30
+    sleep 45
     
     print_status "Checking deployment status..."
     docker-compose ps
+    
+    # Verify containers are running
+    if ! docker-compose ps | grep -q "Up"; then
+        print_error "No containers are running!"
+        print_status "Container logs:"
+        docker-compose logs --tail=20
+        exit 1
+    fi
 }
 
 # Check application health
 check_health() {
     print_status "Checking application health..."
     
-    # Check backend health
-    if curl -f "http://localhost:4000/" &> /dev/null; then
-        print_success "Backend is healthy"
-    else
-        print_warning "Backend health check failed"
+    # Check backend health with retry
+    BACKEND_READY=false
+    for i in {1..10}; do
+        if curl -f --max-time 10 "http://localhost:4000/" &> /dev/null; then
+            print_success "Backend is healthy"
+            BACKEND_READY=true
+            break
+        else
+            print_status "Waiting for backend... (attempt $i/10)"
+            sleep 10
+        fi
+    done
+    
+    if [ "$BACKEND_READY" = false ]; then
+        print_error "Backend health check failed"
+        print_status "Backend logs:"
+        docker-compose logs backend --tail=20
     fi
     
-    # Check frontend availability
-    if curl -f "http://localhost/" &> /dev/null; then
-        print_success "Frontend is accessible"
-    else
+    # Check frontend availability with retry
+    FRONTEND_READY=false
+    for i in {1..8}; do
+        if curl -f --max-time 10 "http://localhost/" &> /dev/null; then
+            print_success "Frontend is accessible"
+            FRONTEND_READY=true
+            break
+        else
+            print_status "Waiting for frontend... (attempt $i/8)"
+            sleep 10
+        fi
+    done
+    
+    if [ "$FRONTEND_READY" = false ]; then
         print_warning "Frontend health check failed"
+        print_status "Frontend logs:"
+        docker-compose logs frontend --tail=20
+    fi
+    
+    # External connectivity check
+    print_status "Testing external connectivity..."
+    if curl -f --max-time 10 "http://$VM_IP:4000/" &> /dev/null; then
+        print_success "Backend API accessible externally"
+    else
+        print_warning "Backend API not accessible externally"
+    fi
+    
+    if curl -f --max-time 10 "http://$VM_IP/" &> /dev/null; then
+        print_success "Frontend accessible externally"
+    else
+        print_warning "Frontend not accessible externally"
     fi
 }
 
