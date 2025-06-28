@@ -15,18 +15,31 @@ import {
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EditIcon from '@mui/icons-material/Edit';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 export const FileList = ({ 
   files, 
   selectedFiles, 
   onSelectFile, 
-  onStartIndexing 
+  onStartIndexing,
+  onAnnotate,
+  onViewFile
 }) => {
   return (
     <TableContainer component={Paper}>
       <Table>
         <TableHead>
-          {/* ...existing header code... */}
+          <TableRow>
+            <TableCell padding="checkbox">
+              <Checkbox />
+            </TableCell>
+            <TableCell>Name</TableCell>
+            <TableCell>Type</TableCell>
+            <TableCell>Status</TableCell>
+            <TableCell>Date</TableCell>
+            <TableCell>Actions</TableCell>
+          </TableRow>
         </TableHead>
         <TableBody>
           {files.map((file) => (
@@ -63,7 +76,33 @@ export const FileList = ({
                 {new Date(file.date_uploaded).toLocaleDateString()}
               </TableCell>
               <TableCell>
-                <MoreVertIcon />
+                {/* PDF Annotation Button */}
+                {file.type === 'application/pdf' && (
+                  <Tooltip title="Annotate PDF">
+                    <IconButton 
+                      onClick={() => onAnnotate && onAnnotate(file)}
+                      size="small"
+                      color="primary"
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                
+                {/* View File Button */}
+                <Tooltip title="View File">
+                  <IconButton 
+                    onClick={() => onViewFile ? onViewFile(file) : window.open(`${process.env.REACT_APP_BASE_URL}/${file.file_path}`, '_blank')}
+                    size="small"
+                  >
+                    <VisibilityIcon />
+                  </IconButton>
+                </Tooltip>
+                
+                {/* More Options */}
+                <IconButton size="small">
+                  <MoreVertIcon />
+                </IconButton>
               </TableCell>
             </TableRow>
           ))}
