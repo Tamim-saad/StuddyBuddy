@@ -6,6 +6,7 @@ import { FileList } from '../files/FileList';
 import { UploadButton } from './UploadButton';
 import { uploadService } from '../../services';
 import { useCallback } from 'react';
+import PDFAnnotator from '../PDFAnnotator';
 
 export const FileUpload = () => {
   const [files, setFiles] = useState([]);
@@ -16,6 +17,7 @@ export const FileUpload = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false); // To track if file upload is in progress
   const [indexingFiles, setIndexingFiles] = useState(new Set());
+  const [annotatingFile, setAnnotatingFile] = useState(null);
 
   useEffect(() => {
     loadFiles();
@@ -179,6 +181,39 @@ export const FileUpload = () => {
       setLoading(false);
     }
   }, []);
+
+  // Annotation handlers
+  const handleAnnotate = (file) => {
+    setAnnotatingFile(file);
+  };
+
+  const handleAnnotationSave = (result) => {
+    console.log('Annotations saved:', result);
+    setAnnotatingFile(null);
+    // Refresh file list to show new annotated file
+    loadFiles();
+  };
+
+  const handleAnnotatorClose = () => {
+    setAnnotatingFile(null);
+  };
+
+  const handleViewFile = (file) => {
+    window.open(`${process.env.REACT_APP_BASE_URL}/${file.file_path}`, '_blank');
+  };
+
+  // If annotating, show the annotator
+  if (annotatingFile) {
+    return (
+      <PDFAnnotator
+        fileId={annotatingFile.id}
+        filePath={annotatingFile.file_path}
+        onSave={handleAnnotationSave}
+        onClose={handleAnnotatorClose}
+      />
+    );
+  }
+  
   const filteredFiles = searchResults || (files?.filter(file => {
     if (!file || !file.title) return false;
     return file.title.toLowerCase().includes(
@@ -247,6 +282,8 @@ export const FileUpload = () => {
             );
           }}
           onStartIndexing={handleStartIndexing}
+          onAnnotate={handleAnnotate}
+          onViewFile={handleViewFile}
         />
       )}
     </Box>

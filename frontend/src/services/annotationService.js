@@ -1,5 +1,5 @@
 // src/services/annotationService.js
-import { getAuthHeaders } from './authService';
+import { authServices } from '../auth';
 
 const API_BASE_URL = process.env.REACT_APP_BASE_URL;
 
@@ -11,10 +11,11 @@ export const annotationService = {
       formData.append('annotatedPdf', annotatedPdfBlob, 'annotated.pdf');
       formData.append('originalFileId', originalFileId);
 
+      const accessToken = authServices.getAccessToken();
       const response = await fetch(`${API_BASE_URL}/api/uploads/save-annotated`, {
         method: 'POST',
         headers: {
-          ...getAuthHeaders(),
+          'Authorization': `Bearer ${accessToken}`,
         },
         body: formData,
       });

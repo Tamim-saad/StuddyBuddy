@@ -1,7 +1,7 @@
 // src/components/PDFAnnotator.jsx
 import React, { useEffect, useRef, useState } from "react";
 import WebViewer from "@pdftron/webviewer";
-import annotationService from "../services/annotationService";
+import { annotationService } from "../services/annotationService";
 import "./PDFAnnotator.css";
 
 const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
