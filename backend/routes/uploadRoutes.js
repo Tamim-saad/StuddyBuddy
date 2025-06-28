@@ -95,9 +95,13 @@ router.get('/', authenticateToken, async (req, res) => {
       `SELECT 
         c.*,
         u.name as uploaded_by_name,
-        u.avatar_url as uploaded_by_avatar
+        u.avatar_url as uploaded_by_avatar,
+        annotated.id as annotated_pdf_id,
+        annotated.title as annotated_title,
+        annotated.file_path as annotated_file_path
        FROM chotha c
        LEFT JOIN users u ON c.user_id = u.id
+       LEFT JOIN chotha annotated ON c.annotated_pdf_id = annotated.id
        WHERE c.user_id = $1 
        AND c.title ILIKE $2
        ORDER BY c.date_uploaded DESC
@@ -196,6 +200,173 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Delete error:', error);
     res.status(500).json({ error: 'Could not delete file' });
+  }
+});
+
+// Configure multer for annotated PDF storage (saves as new file)
+const annotationStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const userPath = `uploads/${req.user.id}`;
+    // Create user-specific directory if it doesn't exist
+    require('fs').mkdirSync(userPath, { recursive: true });
+    cb(null, userPath);
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = `${Date.now()}-${Math.round(Math.random() * 1E9)}`;
+    cb(null, `annotated_${uniqueSuffix}.pdf`);
+  }
+});
+
+const uploadAnnotated = multer({ 
+  storage: annotationStorage,
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50MB limit for annotated PDFs
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype === 'application/pdf') {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF files are allowed for annotations.'));
+    }
+  }
+});
+
+// Save annotated PDF as new file (keeps original)
+router.post('/save-annotated', authenticateToken, uploadAnnotated.single('annotatedPdf'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No annotated PDF uploaded' });
+    }
+
+    const { originalFileId } = req.body;
+    const userId = req.user.id;
+
+    if (!originalFileId) {
+      return res.status(400).json({ error: 'Original file ID is required' });
+    }
+
+    // Get original file information from database
+    const originalFileQuery = `
+      SELECT id, title, type, file_path, user_id 
+      FROM chotha 
+      WHERE id = $1 AND user_id = $2
+    `;
+    const originalFileResult = await pool.query(originalFileQuery, [originalFileId, userId]);
+
+    if (originalFileResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Original file not found or unauthorized' });
+    }
+
+    const originalFile = originalFileResult.rows[0];
+    const file = req.file;
+
+    // Insert annotated PDF as new entry in chotha table
+    const result = await pool.query(
+      `INSERT INTO chotha (
+        user_id,
+        title,
+        type,
+        file_path,
+        file_url,
+        file_size,
+        priority,
+        indexing_status,
+        date_uploaded
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW()) 
+      RETURNING *`,
+      [
+        userId,                                                    // user_id
+        `${originalFile.title} (Annotated)`,                     // title
+        file.mimetype,                                            // type
+        file.path,                                                // file_path
+        `/uploads/${userId}/${file.filename}`,                   // file_url
+        file.size,                                               // file_size
+        'normal',                                                // priority
+        'completed'                                              // indexing_status
+      ]
+    );
+
+    const annotatedFile = result.rows[0];
+
+    // Update original file to link to annotated version
+    await pool.query(
+      `UPDATE chotha SET annotated_pdf_id = $1 WHERE id = $2`,
+      [annotatedFile.id, originalFileId]
+    );
+
+    res.status(201).json({
+      message: 'Annotated PDF saved successfully',
+      originalFile: originalFile,
+      annotatedFile: annotatedFile,
+      annotatedFileId: annotatedFile.id
+    });
+
+  } catch (error) {
+    console.error('Error saving annotated PDF:', error);
+    
+    // Clean up uploaded file if database operation failed
+    if (req.file && require('fs').existsSync(req.file.path)) {
+      require('fs').unlinkSync(req.file.path);
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to save annotated PDF',
+      details: error.message 
+    });
+  }
+});
+
+// Get file information with annotation status
+router.get('/:fileId/info', authenticateToken, async (req, res) => {
+  try {
+    const { fileId } = req.params;
+    const userId = req.user.id;
+
+    const fileQuery = `
+      SELECT 
+        c.*,
+        annotated.id as annotated_pdf_id,
+        annotated.title as annotated_title,
+        annotated.file_path as annotated_file_path,
+        annotated.file_url as annotated_file_url,
+        annotated.date_uploaded as annotated_date
+      FROM chotha c
+      LEFT JOIN chotha annotated ON c.annotated_pdf_id = annotated.id
+      WHERE c.id = $1 AND c.user_id = $2
+    `;
+    
+    const result = await pool.query(fileQuery, [fileId, userId]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found or unauthorized' });
+    }
+
+    const fileInfo = result.rows[0];
+    
+    res.json({
+      file: {
+        id: fileInfo.id,
+        title: fileInfo.title,
+        type: fileInfo.type,
+        file_path: fileInfo.file_path,
+        file_url: fileInfo.file_url,
+        file_size: fileInfo.file_size,
+        date_uploaded: fileInfo.date_uploaded,
+        has_annotations: fileInfo.annotated_pdf_id !== null,
+        annotated_pdf: fileInfo.annotated_pdf_id ? {
+          id: fileInfo.annotated_pdf_id,
+          title: fileInfo.annotated_title,
+          file_path: fileInfo.annotated_file_path,
+          file_url: fileInfo.annotated_file_url,
+          date_uploaded: fileInfo.annotated_date
+        } : null
+      }
+    });
+
+  } catch (error) {
+    console.error('Error getting file info:', error);
+    res.status(500).json({ 
+      error: 'Failed to get file information',
+      details: error.message 
+    });
   }
 });
 
