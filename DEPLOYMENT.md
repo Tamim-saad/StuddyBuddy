@@ -108,7 +108,7 @@ REACT_APP_GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
 REACT_APP_BASE_URL=http://${VM_IP}:4000
 BACKEND_URL=http://${VM_IP}:4000
 FRONTEND_URL=http://${VM_IP}
-POSTGRES_URI=postgresql://postgres:postgres@${VM_IP}:5432/postgres
+POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/postgres
 COMPOSE_PROJECT_NAME=studdybuddy
 EOF
 ```

@@ -32,7 +32,7 @@ In the `backend` directory, create a `.env` file with the following variables:
 
 ```ini
 PORT=4000
-POSTGRES_URI=postgresql://postgres:postgres@localhost:5432/postgres
+POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/postgres
 JWT_SECRET=your_jwt_secret_here
 EMAIL_USER=your_email@gmail.com
 EMAIL_PASS=your_app_password
