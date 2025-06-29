@@ -45,8 +45,11 @@ export const annotationService = {
   // Check if file has annotations and get file info
   async getFileAnnotationInfo(fileId) {
     try {
+      const accessToken = authServices.getAccessToken();
       const response = await fetch(`${API_BASE_URL}/api/uploads/${fileId}/info`, {
-        headers: getAuthHeaders(),
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+        },
       });
 
       if (!response.ok) {
