@@ -7,6 +7,7 @@ import { UploadButton } from './UploadButton';
 import { uploadService } from '../../services';
 import { useCallback } from 'react';
 import PDFAnnotator from '../PDFAnnotator';
+import PDFViewer from '../PDFViewer';
 
 export const FileUpload = () => {
   const [files, setFiles] = useState([]);
@@ -18,6 +19,7 @@ export const FileUpload = () => {
   const [isUploading, setIsUploading] = useState(false); // To track if file upload is in progress
   const [indexingFiles, setIndexingFiles] = useState(new Set());
   const [annotatingFile, setAnnotatingFile] = useState(null);
+  const [viewingFile, setViewingFile] = useState(null);
 
   useEffect(() => {
     loadFiles();
@@ -198,8 +200,18 @@ export const FileUpload = () => {
     setAnnotatingFile(null);
   };
 
+  const handleViewerClose = () => {
+    setViewingFile(null);
+  };
+
   const handleViewFile = (file) => {
-    window.open(`${process.env.REACT_APP_BASE_URL}/${file.file_path}`, '_blank');
+    // If it's a PDF, use the PDFViewer component
+    if (file.type === 'application/pdf') {
+      setViewingFile(file);
+    } else {
+      // For other file types, open in new tab
+      window.open(`${process.env.REACT_APP_BASE_URL}/${file.file_path}`, '_blank');
+    }
   };
 
   // If annotating, show the annotator
@@ -210,6 +222,18 @@ export const FileUpload = () => {
         filePath={annotatingFile.file_path}
         onSave={handleAnnotationSave}
         onClose={handleAnnotatorClose}
+      />
+    );
+  }
+
+  // If viewing a PDF, show the PDF viewer
+  if (viewingFile) {
+    return (
+      <PDFViewer
+        fileId={viewingFile.id}
+        filePath={viewingFile.file_path}
+        fileName={viewingFile.title}
+        onClose={handleViewerClose}
       />
     );
   }
