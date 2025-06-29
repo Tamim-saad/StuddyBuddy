@@ -8,10 +8,11 @@ app.disable("x-powered-by");
 
 const corsOptions = {
   origin: [
-    "http://localhost:3000",      // Development
+    "http://localhost:3000",      // Development frontend
     "http://localhost",           // Local production
+    "http://127.0.0.1:3000",      // Alternative localhost
     process.env.FRONTEND_URL,     // Environment variable (Azure VM)
-    process.env.REACT_APP_BASE_URL?.replace(':4000', '') // Frontend URL without port
+    process.env.REACT_APP_BASE_URL?.replace(':5000', '').replace(':4000', '') // Frontend URL without port
   ].filter(Boolean), // Remove any undefined values
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
