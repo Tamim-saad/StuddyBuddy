@@ -11,34 +11,89 @@ const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
-    const initializeNutrient = async () => {
+    const initializeNutrientViewer = async () => {
       try {
         setIsLoading(true);
         setError(null);
 
+        // Ensure container exists and has dimensions
+        const container = document.getElementById('pdf-annotator-container');
+        if (!container) {
+          throw new Error("PDF container element not found");
+        }
+
+        console.log("Container element:", container);
+        console.log("Container dimensions:", {
+          width: container.offsetWidth,
+          height: container.offsetHeight
+        });
+
         // Import Nutrient SDK dynamically
         const NutrientSDK = await import("@nutrient-sdk/viewer");
+        console.log("Nutrient SDK loaded:", NutrientSDK);
         
         const pdfUrl = annotationService.getPDFUrl(filePath);
+        console.log("Loading PDF from:", pdfUrl);
+
+        // Test if PDF is accessible
+        try {
+          const response = await fetch(pdfUrl, { method: 'HEAD' });
+          if (!response.ok) {
+            throw new Error(`PDF not accessible: ${response.status} ${response.statusText}`);
+          }
+          console.log("PDF is accessible");
+        } catch (fetchError) {
+          console.error("PDF fetch test failed:", fetchError);
+          throw new Error(`Cannot access PDF file: ${fetchError.message}`);
+        }
         
-        // Initialize Nutrient Web SDK
+        // Initialize Nutrient Web SDK for annotation
         const viewer = await NutrientSDK.load({
-          container: containerRef.current,
+          container: '#pdf-annotator-container', // Use CSS selector instead of ref
           document: pdfUrl,
-          // Enable all annotation tools
+          // Configuration for annotation functionality
           initialViewState: {
             enableAnnotationCreation: true,
             enableDocumentEditing: true,
             showToolbar: true,
             showAnnotationCreationTools: true,
           },
-          // Customize UI
+          // Customize UI with annotation tools
           baseUrl: `${window.location.origin}/nutrient-sdk/`,
-          // Add custom CSS if needed
-          styleSheets: [
-            `${window.location.origin}/nutrient-sdk/nutrient-viewer.css`
+          // Full annotation toolbar
+          toolbarItems: [
+            'sidebar-thumbnails',
+            'sidebar-document-outline',
+            'sidebar-annotations',
+            'spacer',
+            'zoom-out',
+            'zoom-in',
+            'zoom-mode',
+            'spacer',
+            'pan',
+            'search',
+            'spacer',
+            'annotate',
+            'spacer',
+            'text',
+            'highlight',
+            'strikeout',
+            'underline',
+            'spacer',
+            'ink',
+            'spacer',
+            'line',
+            'rectangle',
+            'ellipse',
+            'spacer',
+            'note',
+            'spacer',
+            'print',
+            'download'
           ],
         });
+
+        console.log("Nutrient SDK viewer initialized:", viewer);
 
         // Set up event listeners for tracking changes
         viewer.addEventListener("annotationsChange", () => {
@@ -50,24 +105,44 @@ const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
           setIsLoading(false);
         });
 
+        viewer.addEventListener("documentLoadFailed", (error) => {
+          console.error("Document load failed:", error);
+          setError("Failed to load PDF document. Please check the file path and try again.");
+          setIsLoading(false);
+        });
+
         setInstance(viewer);
 
       } catch (err) {
-        console.error("Error initializing Nutrient SDK:", err);
-        setError("Failed to load PDF annotation viewer. Please try again.");
+        console.error("Error initializing PDF annotation viewer:", err);
+        setError(`Failed to load PDF annotation viewer: ${err.message}`);
         setIsLoading(false);
       }
     };
 
-    initializeNutrient();
+    // Add a small delay to ensure the container is fully rendered
+    const timeoutId = setTimeout(initializeNutrientViewer, 100);
 
-    // Cleanup
     return () => {
-      if (instance) {
-        instance.dispose();
-      }
+      clearTimeout(timeoutId);
     };
-  }, [filePath]);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Separate effect to handle file path changes  
+  useEffect(() => {
+    if (instance && filePath) {
+      // If we need to load a different file, dispose current instance and reinitialize
+      console.log("File path changed, reinitializing viewer");
+      instance.dispose();
+      setInstance(null);
+      setIsLoading(true);
+      
+      // Trigger reinitialization after cleanup
+      setTimeout(() => {
+        window.location.reload(); // Simple approach for now
+      }, 100);
+    }
+  }, [filePath]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSave = async () => {
     if (!instance) return;
@@ -101,7 +176,11 @@ const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
 
   const handleClose = () => {
     if (instance) {
-      instance.dispose();
+      try {
+        instance.dispose();
+      } catch (err) {
+        console.error("Error disposing Nutrient SDK instance:", err);
+      }
     }
     onClose();
   };
@@ -178,6 +257,7 @@ const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
       
       {/* Nutrient SDK Container */}
       <div 
+        id="pdf-annotator-container"
         ref={containerRef} 
         className="nutrient-container"
         style={{ 
