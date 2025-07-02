@@ -2,6 +2,7 @@
 import React, { useEffect, useRef, useState, useCallback } from "react";
 import { annotationService } from "../services/annotationService";
 import FallbackPDFViewer from "./FallbackPDFViewer";
+import PDFAnnotationViewer from "./PDFAnnotationViewer";
 import "./PDFViewer.css";
 
 const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
@@ -10,6 +11,7 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [useFallback, setUseFallback] = useState(false);
+  const [useAnnotationViewer, setUseAnnotationViewer] = useState(false);
   const [initAttempted, setInitAttempted] = useState(false);
   const containerId = `pdf-viewer-container-${Math.random().toString(36).substr(2, 9)}`;
 
@@ -175,6 +177,11 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
     cleanupViewer().then(tryAdvancedViewer);
   }, [cleanupViewer, tryAdvancedViewer]);
 
+  // Use annotation viewer if requested
+  if (useAnnotationViewer) {
+    return <PDFAnnotationViewer fileId={fileId} filePath={filePath} onClose={onClose} fileName={fileName} />;
+  }
+
   // Use fallback viewer if requested
   if (useFallback) {
     return <FallbackPDFViewer filePath={filePath} onClose={onClose} fileName={fileName} />;
@@ -185,6 +192,21 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
       <div className="viewer-header">
         <h3>PDF Viewer - {fileName}</h3>
         <div className="viewer-controls">
+          <button 
+            onClick={() => setUseAnnotationViewer(true)} 
+            className="annotation-btn"
+            style={{
+              background: '#28a745',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '4px',
+              margin: '0 0.5rem',
+              cursor: 'pointer'
+            }}
+          >
+            ✏️ Annotate PDF
+          </button>
           <button 
             onClick={handleUseFallback} 
             className="fallback-btn"
@@ -245,6 +267,21 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
                 }}
               >
                 🔄 Retry
+              </button>
+              <button 
+                onClick={() => setUseAnnotationViewer(true)} 
+                className="annotation-btn"
+                style={{
+                  background: '#28a745',
+                  color: 'white',
+                  border: 'none',
+                  padding: '0.5rem 1rem',
+                  borderRadius: '4px',
+                  margin: '0 0.5rem',
+                  cursor: 'pointer'
+                }}
+              >
+                ✏️ Try Annotation Viewer
               </button>
               <button 
                 onClick={handleUseFallback} 
@@ -320,6 +357,21 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
               margin: '0 auto 1rem'
             }}></div>
             <p>Loading advanced PDF viewer...</p>
+            <button 
+              onClick={() => setUseAnnotationViewer(true)}
+              style={{
+                marginTop: '1rem',
+                background: '#28a745',
+                color: 'white',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '4px',
+                cursor: 'pointer',
+                marginRight: '0.5rem'
+              }}
+            >
+              Try Annotation Viewer
+            </button>
             <button 
               onClick={handleUseFallback}
               style={{
