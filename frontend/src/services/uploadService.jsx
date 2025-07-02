@@ -1,7 +1,7 @@
 import axios from 'axios';
 import { authServices } from '../auth';
 
-const API_BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:4000';
+const API_BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:5000';
 
 export const uploadService = {
   async uploadFile(file, config = {}) {

@@ -16,6 +16,7 @@
     "cra-template": "1.2.0",
     "date-fns": "^4.1.0",
     "jwt-decode": "^4.0.0",
+    "pdfjs-dist": "^5.3.31",
     "react": "^19.0.0",
     "react-big-calendar": "^1.18.0",
     "react-chartjs-2": "^5.3.0",
@@ -30,7 +31,6 @@
     "react-toastify": "^11.0.5",
     "web-vitals": "^4.2.4"
   },
-  
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
