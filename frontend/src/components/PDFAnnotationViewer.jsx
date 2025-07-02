@@ -29,6 +29,74 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
 
   const pdfUrl = annotationService.getPDFUrl(filePath);
 
+  // Convert a point from screen-space back into original PDF-space
+  const convertToOriginal = (x, y, currentScale = scale, currentRotation = rotation) => {
+    // Store original canvas dimensions for consistent calculations
+    const originalCanvasWidth = canvasSize.width;
+    const originalCanvasHeight = canvasSize.height;
+    
+    // First undo the rotation transformation
+    let unrotatedX, unrotatedY;
+    switch (currentRotation) {
+      case 90:  
+        unrotatedX = y;                      
+        unrotatedY = originalCanvasWidth - x;  
+        break;
+      case 180: 
+        unrotatedX = originalCanvasWidth - x;   
+        unrotatedY = originalCanvasHeight - y; 
+        break;
+      case 270: 
+        unrotatedX = originalCanvasHeight - y;  
+        unrotatedY = x;                     
+        break;
+      default:  
+        unrotatedX = x;                      
+        unrotatedY = y;                     
+        break;
+    }
+    
+    // Then undo the scaling to get original PDF coordinates
+    return { 
+      x: unrotatedX / currentScale, 
+      y: unrotatedY / currentScale 
+    };
+  };
+
+  // Convert original PDF coordinates to current screen coordinates
+  const convertToScreen = (originalX, originalY, currentScale = scale, currentRotation = rotation) => {
+    // Store original canvas dimensions for consistent calculations
+    const originalCanvasWidth = canvasSize.width;
+    const originalCanvasHeight = canvasSize.height;
+    
+    // First apply scaling
+    let scaledX = originalX * currentScale;
+    let scaledY = originalY * currentScale;
+    
+    // Then apply rotation transformation
+    let screenX, screenY;
+    switch (currentRotation) {
+      case 90:  
+        screenX = originalCanvasWidth - scaledY;   
+        screenY = scaledX;                     
+        break;
+      case 180: 
+        screenX = originalCanvasWidth - scaledX;   
+        screenY = originalCanvasHeight - scaledY; 
+        break;
+      case 270: 
+        screenX = scaledY;                      
+        screenY = originalCanvasHeight - scaledX; 
+        break;
+      default:  
+        screenX = scaledX;                      
+        screenY = scaledY;                     
+        break;
+    }
+    
+    return { x: screenX, y: screenY };
+  };
+
   // Load PDF and initialize viewer
   useEffect(() => {
     let mounted = true;
@@ -226,7 +294,7 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
     }
   };
 
-  const renderPDFPage = async (pdf, pageNum, annotationsData = null) => {
+  const renderPDFPage = async (pdf, pageNum, annotationsData = null, forceScale = null, forceRotation = null) => {
     if (isRendering || !pdf) return;
     
     try {
@@ -235,12 +303,20 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       
+      // Use forced values if provided, otherwise use current state
+      const currentScale = forceScale !== null ? forceScale : scale;
+      const currentRotation = forceRotation !== null ? forceRotation : rotation;
+      
+      console.log(`🎨 Rendering page ${pageNum} with scale: ${currentScale}, rotation: ${currentRotation}`);
+      
       // Apply rotation to viewport
-      const viewport = page.getViewport({ scale, rotation });
+      const viewport = page.getViewport({ scale: currentScale, rotation: currentRotation });
       canvas.height = viewport.height;
       canvas.width = viewport.width;
       
-      setCanvasSize({ width: viewport.width, height: viewport.height });
+      // Update canvas size immediately and synchronously
+      const newCanvasSize = { width: viewport.width, height: viewport.height };
+      setCanvasSize(newCanvasSize);
       
       // Clear canvas
       context.clearRect(0, 0, canvas.width, canvas.height);
@@ -258,7 +334,11 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
       const pageAnnotations = annotationsSource[pageNum] || [];
       console.log(`🔍 Loading annotations for page ${pageNum}:`, pageAnnotations.length, 'annotations');
       console.log('📋 Page annotations:', pageAnnotations);
-      setAnnotations(pageAnnotations);
+      
+      // Force re-render of annotations with new canvas size
+      setTimeout(() => {
+        setAnnotations([...pageAnnotations]);
+      }, 0);
       
       setCurrentPage(pageNum);
     } catch (error) {
@@ -295,34 +375,47 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
 
   const zoomIn = () => {
     const newScale = Math.min(scale + 0.25, 3);
+    console.log('🔍 Zooming in from', scale, 'to', newScale);
     setScale(newScale);
+    
     if (pdfDoc) {
-      renderPDFPage(pdfDoc, currentPage);
+      // Pass the new scale value directly to ensure synchronous rendering
+      renderPDFPage(pdfDoc, currentPage, null, newScale, rotation);
     }
   };
 
   const zoomOut = () => {
     const newScale = Math.max(scale - 0.25, 0.5);
+    console.log('🔍 Zooming out from', scale, 'to', newScale);
     setScale(newScale);
+    
     if (pdfDoc) {
-      renderPDFPage(pdfDoc, currentPage);
+      // Pass the new scale value directly to ensure synchronous rendering
+      renderPDFPage(pdfDoc, currentPage, null, newScale, rotation);
     }
   };
 
-  // Rotation functions
-  const rotateLeft = () => {
-    const newRotation = (rotation - 90 + 360) % 360;
-    setRotation(newRotation);
-    if (pdfDoc) {
-      renderPDFPage(pdfDoc, currentPage);
-    }
-  };
-
-  const rotateRight = () => {
+  // Rotation function - cycles through 0, 90, 180, 270 degrees
+  const rotatePage = () => {
     const newRotation = (rotation + 90) % 360;
+    console.log('🔄 Rotating from', rotation, 'to', newRotation);
     setRotation(newRotation);
+    
     if (pdfDoc) {
-      renderPDFPage(pdfDoc, currentPage);
+      // Pass the new rotation value directly to ensure synchronous rendering
+      renderPDFPage(pdfDoc, currentPage, null, scale, newRotation);
+    }
+  };
+
+  // Reset zoom and rotation to defaults
+  const resetView = () => {
+    console.log('🔄 Resetting view to defaults');
+    setScale(1);
+    setRotation(0);
+    
+    if (pdfDoc) {
+      // Pass the reset values directly to ensure synchronous rendering
+      renderPDFPage(pdfDoc, currentPage, null, 1, 0);
     }
   };
 
@@ -334,20 +427,26 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
       reader.onload = (e) => {
         const img = new window.Image();
         img.onload = () => {
-          // Add image annotation at center of canvas
-          const centerX = canvasSize.width / 2;
-          const centerY = canvasSize.height / 2;
+          // Add image annotation at center of canvas in original coordinates
+          // Calculate center in original PDF coordinate space
+          const centerScreenX = canvasSize.width / 2;
+          const centerScreenY = canvasSize.height / 2;
+          const centerOriginal = convertToOriginal(centerScreenX, centerScreenY, scale, rotation);
           
           setAnnotations([...annotations, {
             id: Date.now(),
             type: 'image',
-            x: centerX - 50,
-            y: centerY - 50,
+            x: centerOriginal.x - 50, // Store in original coordinates
+            y: centerOriginal.y - 50,
+            originalX: centerOriginal.x - 50, // Keep original for reference
+            originalY: centerOriginal.y - 50,
             width: 100,
             height: 100,
+            originalWidth: 100, // Store original dimensions
+            originalHeight: 100,
             src: e.target.result,
-            originalWidth: img.width,
-            originalHeight: img.height
+            imageWidth: img.width, // Store actual image dimensions
+            imageHeight: img.height
           }]);
         };
         img.src = e.target.result;
@@ -370,15 +469,16 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   const handleMouseDown = (e) => {
     if (annotationMode === 'none') return;
 
-    const pos = e.target.getStage().getPointerPosition();
+    const screenPos = e.target.getStage().getPointerPosition();
+    const pos = convertToOriginal(screenPos.x, screenPos.y, scale, rotation);
     
     if (annotationMode === 'erase') {
       // Eraser mode - remove annotations that intersect with eraser position
-      const eraseRadius = eraserSize;
+      const eraseRadius = eraserSize / scale; // Scale eraser size to original coordinates
       setAnnotations(annotations.filter(annotation => {
         if (annotation.type === 'line' || annotation.type === 'highlight') {
           // Check if any point in the line is within erase radius
-          const points = annotation.points;
+          const points = annotation.originalPoints || annotation.points;
           for (let i = 0; i < points.length; i += 2) {
             const x = points[i];
             const y = points[i + 1];
@@ -390,12 +490,18 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
           return true; // Keep this annotation
         } else if (annotation.type === 'text') {
           // Check if text position is within erase radius
-          const distance = Math.sqrt((annotation.x - pos.x) ** 2 + (annotation.y - pos.y) ** 2);
+          const origX = annotation.originalX !== undefined ? annotation.originalX : annotation.x;
+          const origY = annotation.originalY !== undefined ? annotation.originalY : annotation.y;
+          const distance = Math.sqrt((origX - pos.x) ** 2 + (origY - pos.y) ** 2);
           return distance > eraseRadius;
         } else if (annotation.type === 'image') {
           // Check if click is within image bounds
-          return !(pos.x >= annotation.x && pos.x <= annotation.x + annotation.width &&
-                   pos.y >= annotation.y && pos.y <= annotation.y + annotation.height);
+          const origX = annotation.originalX !== undefined ? annotation.originalX : annotation.x;
+          const origY = annotation.originalY !== undefined ? annotation.originalY : annotation.y;
+          const origWidth = annotation.originalWidth || annotation.width;
+          const origHeight = annotation.originalHeight || annotation.height;
+          return !(pos.x >= origX && pos.x <= origX + origWidth &&
+                   pos.y >= origY && pos.y <= origY + origHeight);
         }
         return true;
       }));
@@ -408,7 +514,8 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
       setAnnotations([...annotations, {
         id: Date.now(),
         type: 'line',
-        points: [pos.x, pos.y],
+        points: [pos.x, pos.y], // Store in original coordinates
+        originalPoints: [pos.x, pos.y], // Keep original for reference
         stroke: drawColor,
         strokeWidth: drawWidth
       }]);
@@ -416,7 +523,8 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
       setAnnotations([...annotations, {
         id: Date.now(),
         type: 'highlight',
-        points: [pos.x, pos.y],
+        points: [pos.x, pos.y], // Store in original coordinates
+        originalPoints: [pos.x, pos.y], // Keep original for reference
         stroke: highlightColor,
         strokeWidth: drawWidth * 3
       }]);
@@ -426,8 +534,10 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
         setAnnotations([...annotations, {
           id: Date.now(),
           type: 'text',
-          x: pos.x,
+          x: pos.x, // Store in original coordinates
           y: pos.y,
+          originalX: pos.x, // Keep original for reference
+          originalY: pos.y,
           text: text,
           fontSize: 16,
           fill: drawColor
@@ -446,14 +556,19 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
     if (!isDrawing || annotationMode === 'none' || annotationMode === 'text' || annotationMode === 'erase') return;
 
     const stage = e.target.getStage();
-    const point = stage.getPointerPosition();
+    const screenPoint = stage.getPointerPosition();
+    const point = convertToOriginal(screenPoint.x, screenPoint.y, scale, rotation);
     
     const lastAnnotation = annotations[annotations.length - 1];
     if (lastAnnotation && (lastAnnotation.type === 'line' || lastAnnotation.type === 'highlight')) {
-      const newPoints = lastAnnotation.points.concat([point.x, point.y]);
+      const newOriginalPoints = (lastAnnotation.originalPoints || lastAnnotation.points).concat([point.x, point.y]);
       setAnnotations([
         ...annotations.slice(0, -1),
-        { ...lastAnnotation, points: newPoints }
+        { 
+          ...lastAnnotation, 
+          points: newOriginalPoints, // Store in original coordinates
+          originalPoints: newOriginalPoints 
+        }
       ]);
     }
   };
@@ -524,6 +639,13 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                   >
                     Zoom In
                   </button>
+                  <button
+                    onClick={resetView}
+                    className="px-2 py-2 bg-gray-400 text-white rounded hover:bg-gray-500 text-xs"
+                    title="Reset zoom and rotation"
+                  >
+                    Reset
+                  </button>
                 </div>
 
                 {/* Annotation Tools */}
@@ -566,21 +688,14 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                   </button>
                 </div>
 
-                {/* Rotation Controls */}
+                {/* Rotation Control */}
                 <div className="flex items-center space-x-2">
                   <button
-                    onClick={rotateLeft}
+                    onClick={rotatePage}
                     className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-                    title="Rotate Left"
+                    title={`Rotate (Currently ${rotation}°)`}
                   >
-                    ↶ Rotate Left
-                  </button>
-                  <button
-                    onClick={rotateRight}
-                    className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
-                    title="Rotate Right"
-                  >
-                    ↷ Rotate Right
+                    ↻ Rotate {(rotation + 90) % 360}°
                   </button>
                 </div>
 
@@ -724,12 +839,20 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                   <Layer>
                     {annotations.map((annotation) => {
                       if (annotation.type === 'line' || annotation.type === 'highlight') {
+                        // Transform points from original coordinates to screen coordinates
+                        const originalPoints = annotation.originalPoints || annotation.points;
+                        const screenPoints = [];
+                        for (let i = 0; i < originalPoints.length; i += 2) {
+                          const screenPos = convertToScreen(originalPoints[i], originalPoints[i + 1], scale, rotation);
+                          screenPoints.push(screenPos.x, screenPos.y);
+                        }
+                        
                         return (
                           <Line
                             key={annotation.id}
-                            points={annotation.points}
+                            points={screenPoints}
                             stroke={annotation.stroke}
-                            strokeWidth={annotation.strokeWidth}
+                            strokeWidth={annotation.strokeWidth * scale}
                             tension={0.5}
                             lineCap="round"
                             lineJoin="round"
@@ -738,25 +861,39 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                           />
                         );
                       } else if (annotation.type === 'text') {
+                        // Transform position from original coordinates to screen coordinates
+                        const originalX = annotation.originalX !== undefined ? annotation.originalX : annotation.x;
+                        const originalY = annotation.originalY !== undefined ? annotation.originalY : annotation.y;
+                        const screenPos = convertToScreen(originalX, originalY, scale, rotation);
+                        
                         return (
                           <KonvaText
                             key={annotation.id}
-                            x={annotation.x}
-                            y={annotation.y}
+                            x={screenPos.x}
+                            y={screenPos.y}
                             text={annotation.text}
-                            fontSize={annotation.fontSize}
+                            fontSize={annotation.fontSize * scale}
                             fill={annotation.fill}
+                            // Don't apply rotation to text as it's handled by coordinate transformation
                             onClick={() => annotationMode === 'erase' && deleteAnnotation(annotation.id)}
                           />
                         );
                       } else if (annotation.type === 'image') {
+                        // Transform position and size from original coordinates to screen coordinates
+                        const originalX = annotation.originalX !== undefined ? annotation.originalX : annotation.x;
+                        const originalY = annotation.originalY !== undefined ? annotation.originalY : annotation.y;
+                        const originalWidth = annotation.originalWidth || annotation.width;
+                        const originalHeight = annotation.originalHeight || annotation.height;
+                        const screenPos = convertToScreen(originalX, originalY, scale, rotation);
+                        
                         return (
                           <KonvaImage
                             key={annotation.id}
-                            x={annotation.x}
-                            y={annotation.y}
-                            width={annotation.width}
-                            height={annotation.height}
+                            x={screenPos.x}
+                            y={screenPos.y}
+                            width={originalWidth * scale}
+                            height={originalHeight * scale}
+                            // Don't apply rotation to image as it's handled by coordinate transformation
                             image={(() => {
                               const img = new window.Image();
                               img.src = annotation.src;
@@ -765,9 +902,20 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                             draggable={annotationMode === 'none'}
                             onClick={() => annotationMode === 'erase' && deleteAnnotation(annotation.id)}
                             onDragEnd={(e) => {
+                              // Convert dragged position back to original coordinates
+                              const newScreenX = e.target.x();
+                              const newScreenY = e.target.y();
+                              const newOriginalPos = convertToOriginal(newScreenX, newScreenY, scale, rotation);
+                              
                               const updatedAnnotations = annotations.map(ann => 
                                 ann.id === annotation.id 
-                                  ? { ...ann, x: e.target.x(), y: e.target.y() }
+                                  ? { 
+                                      ...ann, 
+                                      x: newOriginalPos.x,
+                                      y: newOriginalPos.y,
+                                      originalX: newOriginalPos.x,
+                                      originalY: newOriginalPos.y
+                                    }
                                   : ann
                               );
                               setAnnotations(updatedAnnotations);
