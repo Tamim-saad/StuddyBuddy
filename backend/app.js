@@ -99,10 +99,12 @@ app.use('/nutrient-sdk', express.static(path.join(__dirname, '../frontend/public
 const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
+const annotationRoutes = require("./routes/annotationRoutes");
 // Mount routes
 
 app.use("/api/user", userRoutes);
 app.use("/api/uploads", uploadRoutes);
+app.use("/api/annotations", annotationRoutes);
 
 app.use("/auth", authRoutes);
 app.get("/", (req, res) => {
