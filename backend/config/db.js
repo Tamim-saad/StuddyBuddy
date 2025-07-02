@@ -1,10 +1,13 @@
 
 
 const { Pool } = require("pg");
-const connectionString = process.env.POSTGRES_URI;
 
 const pool = new Pool({
-  connectionString,
+  user: 'postgres',
+  host: 'localhost',
+  database: 'studdybuddy',
+  password: 'postgres',
+  port: 5432,
 });
 
 const connectDB = async () => {
