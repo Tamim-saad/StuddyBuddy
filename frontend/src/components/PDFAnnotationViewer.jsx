@@ -72,10 +72,10 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
         setViewerState('pdf-js');
         
         // Load saved annotations for all pages
-        await loadAllAnnotations();
+        const loadedAnnotations = await loadAllAnnotations();
         
-        // Render first page
-        await renderPDFPage(pdf, 1);
+        // Render first page with loaded annotations
+        await renderPDFPage(pdf, 1, loadedAnnotations);
         
       } catch (error) {
         if (!mounted) return;
@@ -117,7 +117,7 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
 
   // Load annotations from backend
   const loadAllAnnotations = async () => {
-    if (!fileId) return;
+    if (!fileId) return {};
 
     try {
       console.log('Loading annotations for file:', fileId);
@@ -133,6 +133,7 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
         console.log('✅ Loaded annotations:', data);
         
         if (data.annotations) {
+          console.log('🔧 Setting savedAnnotations:', data.annotations);
           setSavedAnnotations(data.annotations);
           
           // Restore PDF state if available
@@ -144,15 +145,26 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
           }
           
           console.log('📄 Annotations loaded for', Object.keys(data.annotations).length, 'pages');
+          
+          // Also log the actual content for debugging
+          Object.entries(data.annotations).forEach(([pageNum, pageAnnotations]) => {
+            console.log(`📖 Page ${pageNum}: ${pageAnnotations.length} annotations`);
+          });
+          
+          return data.annotations;
         }
       } else if (response.status === 404) {
         console.log('📝 No existing annotations found for this PDF');
         setSavedAnnotations({});
+        return {};
       }
     } catch (error) {
       console.error('Failed to load annotations:', error);
       setSavedAnnotations({});
+      return {};
     }
+    
+    return {};
   };
 
   // Save annotations to backend
@@ -214,7 +226,7 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
     }
   };
 
-  const renderPDFPage = async (pdf, pageNum) => {
+  const renderPDFPage = async (pdf, pageNum, annotationsData = null) => {
     if (isRendering || !pdf) return;
     
     try {
@@ -241,7 +253,11 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
       await page.render(renderContext).promise;
       
       // Load annotations for this page
-      const pageAnnotations = savedAnnotations[pageNum] || [];
+      // Use provided annotationsData if available, otherwise fall back to savedAnnotations
+      const annotationsSource = annotationsData || savedAnnotations;
+      const pageAnnotations = annotationsSource[pageNum] || [];
+      console.log(`🔍 Loading annotations for page ${pageNum}:`, pageAnnotations.length, 'annotations');
+      console.log('📋 Page annotations:', pageAnnotations);
       setAnnotations(pageAnnotations);
       
       setCurrentPage(pageNum);

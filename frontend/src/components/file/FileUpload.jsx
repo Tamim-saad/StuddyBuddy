@@ -6,8 +6,7 @@ import { FileList } from '../files/FileList';
 import { UploadButton } from './UploadButton';
 import { uploadService } from '../../services';
 import { useCallback } from 'react';
-import PDFAnnotator from '../PDFAnnotator';
-import PDFViewer from '../PDFViewer';
+import PDFAnnotationViewer from '../PDFAnnotationViewer';
 
 export const FileUpload = () => {
   const [files, setFiles] = useState([]);
@@ -189,15 +188,10 @@ export const FileUpload = () => {
     setAnnotatingFile(file);
   };
 
-  const handleAnnotationSave = (result) => {
-    console.log('Annotations saved:', result);
-    setAnnotatingFile(null);
-    // Refresh file list to show new annotated file
-    loadFiles();
-  };
-
   const handleAnnotatorClose = () => {
     setAnnotatingFile(null);
+    // Refresh file list when annotation viewer closes
+    loadFiles();
   };
 
   const handleViewerClose = () => {
@@ -214,22 +208,22 @@ export const FileUpload = () => {
     }
   };
 
-  // If annotating, show the annotator
+  // If annotating, show the annotation viewer instead of PDFAnnotator
   if (annotatingFile) {
     return (
-      <PDFAnnotator
+      <PDFAnnotationViewer
         fileId={annotatingFile.id}
         filePath={annotatingFile.file_path}
-        onSave={handleAnnotationSave}
+        fileName={annotatingFile.title}
         onClose={handleAnnotatorClose}
       />
     );
   }
 
-  // If viewing a PDF, show the PDF viewer
+  // If viewing a PDF, show the annotation viewer instead of PDF viewer
   if (viewingFile) {
     return (
-      <PDFViewer
+      <PDFAnnotationViewer
         fileId={viewingFile.id}
         filePath={viewingFile.file_path}
         fileName={viewingFile.title}
