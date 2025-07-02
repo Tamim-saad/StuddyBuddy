@@ -1,6 +1,6 @@
 // src/components/PDFAnnotationViewer.jsx
 import React, { useState, useEffect, useRef } from 'react';
-import { Stage, Layer, Line, Text as KonvaText } from 'react-konva';
+import { Stage, Layer, Line, Text as KonvaText, Image as KonvaImage } from 'react-konva';
 import { annotationService } from '../services/annotationService';
 
 const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
@@ -14,15 +14,18 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [isRendering, setIsRendering] = useState(false);
   
   // Annotation states
-  const [annotationMode, setAnnotationMode] = useState('none'); // none, draw, erase, highlight, text
+  const [annotationMode, setAnnotationMode] = useState('none'); // none, draw, erase, highlight, text, image
   const [isDrawing, setIsDrawing] = useState(false);
   const [scale, setScale] = useState(1.5);
+  const [rotation, setRotation] = useState(0); // 0, 90, 180, 270 degrees
   const [annotations, setAnnotations] = useState([]); // All annotations for current page
   const [drawColor, setDrawColor] = useState('#ff0000');
   const [drawWidth, setDrawWidth] = useState(2);
+  const [eraserSize, setEraserSize] = useState(10);
   const [highlightColor] = useState('#ffff0080');
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [savedAnnotations, setSavedAnnotations] = useState({}); // Store all pages annotations
+  const [saveStatus, setSaveStatus] = useState('idle'); // idle, saving, saved, error
 
   const pdfUrl = annotationService.getPDFUrl(filePath);
 
@@ -84,8 +87,31 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
 
     initViewer();
 
+    // Auto-save when component unmounts
     return () => {
       mounted = false;
+      // Save current page before unmounting
+      if (annotations.length > 0 && fileId) {
+        const finalAnnotations = {
+          ...savedAnnotations,
+          [currentPage]: annotations
+        };
+        
+        // Fire and forget save
+        fetch(`${process.env.REACT_APP_BASE_URL || 'http://localhost:5000'}/api/annotations/${fileId}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
+          },
+          body: JSON.stringify({
+            annotations: finalAnnotations,
+            totalPages: totalPages,
+            scale: scale,
+            rotation: rotation
+          })
+        }).catch(err => console.warn('Auto-save failed:', err));
+      }
     };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -94,6 +120,8 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
     if (!fileId) return;
 
     try {
+      console.log('Loading annotations for file:', fileId);
+      
       const response = await fetch(`${process.env.REACT_APP_BASE_URL || 'http://localhost:5000'}/api/annotations/${fileId}`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
@@ -102,31 +130,87 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
 
       if (response.ok) {
         const data = await response.json();
-        setSavedAnnotations(data.annotations || {});
+        console.log('✅ Loaded annotations:', data);
+        
+        if (data.annotations) {
+          setSavedAnnotations(data.annotations);
+          
+          // Restore PDF state if available
+          if (data.scale) {
+            setScale(data.scale);
+          }
+          if (data.rotation !== undefined) {
+            setRotation(data.rotation);
+          }
+          
+          console.log('📄 Annotations loaded for', Object.keys(data.annotations).length, 'pages');
+        }
+      } else if (response.status === 404) {
+        console.log('📝 No existing annotations found for this PDF');
+        setSavedAnnotations({});
       }
     } catch (error) {
       console.error('Failed to load annotations:', error);
+      setSavedAnnotations({});
     }
   };
 
   // Save annotations to backend
   const saveAnnotations = async () => {
-    if (!fileId) return;
+    if (!fileId) {
+      setError('No file ID available for saving annotations');
+      return;
+    }
 
     try {
-      await fetch(`${process.env.REACT_APP_BASE_URL || 'http://localhost:5000'}/api/annotations/${fileId}`, {
+      setSaveStatus('saving');
+      
+      // First save current page annotations
+      saveCurrentPageAnnotations();
+      
+      // Prepare annotations data including current page
+      const allAnnotationsToSave = {
+        ...savedAnnotations,
+        [currentPage]: annotations
+      };
+      
+      console.log('Saving annotations for file:', fileId, allAnnotationsToSave);
+      
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL || 'http://localhost:5000'}/api/annotations/${fileId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem('authToken') || ''}`
         },
         body: JSON.stringify({
-          annotations: savedAnnotations
+          annotations: allAnnotationsToSave,
+          totalPages: totalPages,
+          scale: scale,
+          rotation: rotation
         })
       });
+
+      if (response.ok) {
+        await response.json(); // Just to consume the response
+        console.log('✅ Annotations saved successfully');
+        
+        // Update saved state
+        setSavedAnnotations(allAnnotationsToSave);
+        setSaveStatus('saved');
+        setError(''); // Clear any existing errors
+        
+        // Show saved status for 2 seconds
+        setTimeout(() => setSaveStatus('idle'), 2000);
+      } else {
+        throw new Error(`Save failed: ${response.statusText}`);
+      }
     } catch (error) {
       console.error('Failed to save annotations:', error);
-      setError('Failed to save annotations');
+      setError(`Failed to save annotations: ${error.message}`);
+      setSaveStatus('error');
+      
+      // Reset status after 3 seconds
+      setTimeout(() => setSaveStatus('idle'), 3000);
     }
   };
 
@@ -139,7 +223,8 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
       const canvas = canvasRef.current;
       const context = canvas.getContext('2d');
       
-      const viewport = page.getViewport({ scale });
+      // Apply rotation to viewport
+      const viewport = page.getViewport({ scale, rotation });
       canvas.height = viewport.height;
       canvas.width = viewport.width;
       
@@ -185,9 +270,10 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   };
 
   const saveCurrentPageAnnotations = () => {
+    console.log(`💾 Saving annotations for page ${currentPage}:`, annotations.length, 'annotations');
     setSavedAnnotations(prev => ({
       ...prev,
-      [currentPage]: annotations
+      [currentPage]: [...annotations] // Create a copy to avoid reference issues
     }));
   };
 
@@ -207,12 +293,100 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
     }
   };
 
+  // Rotation functions
+  const rotateLeft = () => {
+    const newRotation = (rotation - 90 + 360) % 360;
+    setRotation(newRotation);
+    if (pdfDoc) {
+      renderPDFPage(pdfDoc, currentPage);
+    }
+  };
+
+  const rotateRight = () => {
+    const newRotation = (rotation + 90) % 360;
+    setRotation(newRotation);
+    if (pdfDoc) {
+      renderPDFPage(pdfDoc, currentPage);
+    }
+  };
+
+  // Image insertion function
+  const handleImageUpload = (event) => {
+    const file = event.target.files[0];
+    if (file && file.type.startsWith('image/')) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new window.Image();
+        img.onload = () => {
+          // Add image annotation at center of canvas
+          const centerX = canvasSize.width / 2;
+          const centerY = canvasSize.height / 2;
+          
+          setAnnotations([...annotations, {
+            id: Date.now(),
+            type: 'image',
+            x: centerX - 50,
+            y: centerY - 50,
+            width: 100,
+            height: 100,
+            src: e.target.result,
+            originalWidth: img.width,
+            originalHeight: img.height
+          }]);
+        };
+        img.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+    // Reset input
+    event.target.value = '';
+  };
+
+  const insertImage = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = handleImageUpload;
+    input.click();
+  };
+
   // Drawing functions
   const handleMouseDown = (e) => {
     if (annotationMode === 'none') return;
 
-    setIsDrawing(true);
     const pos = e.target.getStage().getPointerPosition();
+    
+    if (annotationMode === 'erase') {
+      // Eraser mode - remove annotations that intersect with eraser position
+      const eraseRadius = eraserSize;
+      setAnnotations(annotations.filter(annotation => {
+        if (annotation.type === 'line' || annotation.type === 'highlight') {
+          // Check if any point in the line is within erase radius
+          const points = annotation.points;
+          for (let i = 0; i < points.length; i += 2) {
+            const x = points[i];
+            const y = points[i + 1];
+            const distance = Math.sqrt((x - pos.x) ** 2 + (y - pos.y) ** 2);
+            if (distance <= eraseRadius) {
+              return false; // Remove this annotation
+            }
+          }
+          return true; // Keep this annotation
+        } else if (annotation.type === 'text') {
+          // Check if text position is within erase radius
+          const distance = Math.sqrt((annotation.x - pos.x) ** 2 + (annotation.y - pos.y) ** 2);
+          return distance > eraseRadius;
+        } else if (annotation.type === 'image') {
+          // Check if click is within image bounds
+          return !(pos.x >= annotation.x && pos.x <= annotation.x + annotation.width &&
+                   pos.y >= annotation.y && pos.y <= annotation.y + annotation.height);
+        }
+        return true;
+      }));
+      return;
+    }
+
+    setIsDrawing(true);
     
     if (annotationMode === 'draw') {
       setAnnotations([...annotations, {
@@ -247,7 +421,13 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   };
 
   const handleMouseMove = (e) => {
-    if (!isDrawing || annotationMode === 'none' || annotationMode === 'text') return;
+    if (annotationMode === 'erase' && isDrawing) {
+      // Continue erasing while dragging
+      handleMouseDown(e);
+      return;
+    }
+    
+    if (!isDrawing || annotationMode === 'none' || annotationMode === 'text' || annotationMode === 'erase') return;
 
     const stage = e.target.getStage();
     const point = stage.getPointerPosition();
@@ -345,6 +525,12 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                     Draw
                   </button>
                   <button
+                    onClick={() => setAnnotationMode('erase')}
+                    className={`px-3 py-2 rounded ${annotationMode === 'erase' ? 'bg-orange-500 text-white' : 'bg-gray-200'}`}
+                  >
+                    🗑️ Erase
+                  </button>
+                  <button
                     onClick={() => setAnnotationMode('highlight')}
                     className={`px-3 py-2 rounded ${annotationMode === 'highlight' ? 'bg-yellow-500 text-white' : 'bg-gray-200'}`}
                   >
@@ -355,6 +541,30 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                     className={`px-3 py-2 rounded ${annotationMode === 'text' ? 'bg-green-500 text-white' : 'bg-gray-200'}`}
                   >
                     Text
+                  </button>
+                  <button
+                    onClick={insertImage}
+                    className="px-3 py-2 rounded bg-purple-500 text-white hover:bg-purple-600"
+                  >
+                    🖼️ Image
+                  </button>
+                </div>
+
+                {/* Rotation Controls */}
+                <div className="flex items-center space-x-2">
+                  <button
+                    onClick={rotateLeft}
+                    className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+                    title="Rotate Left"
+                  >
+                    ↶ Rotate Left
+                  </button>
+                  <button
+                    onClick={rotateRight}
+                    className="px-3 py-2 bg-indigo-500 text-white rounded hover:bg-indigo-600"
+                    title="Rotate Right"
+                  >
+                    ↷ Rotate Right
                   </button>
                 </div>
 
@@ -377,6 +587,23 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                     title="Line Width"
                   />
                   <span className="text-sm">{drawWidth}px</span>
+                  
+                  {/* Eraser Size Control */}
+                  {annotationMode === 'erase' && (
+                    <>
+                      <span className="text-sm text-gray-600">|</span>
+                      <input
+                        type="range"
+                        min="5"
+                        max="30"
+                        value={eraserSize}
+                        onChange={(e) => setEraserSize(Number(e.target.value))}
+                        className="w-20"
+                        title="Eraser Size"
+                      />
+                      <span className="text-sm">Eraser: {eraserSize}px</span>
+                    </>
+                  )}
                 </div>
 
                 {/* Action Buttons */}
@@ -389,10 +616,57 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                   </button>
                   <button
                     onClick={saveAnnotations}
-                    className="px-3 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                    disabled={saveStatus === 'saving'}
+                    className={`px-3 py-2 rounded text-white font-medium ${
+                      saveStatus === 'saving' 
+                        ? 'bg-gray-400 cursor-not-allowed' 
+                        : saveStatus === 'saved'
+                        ? 'bg-green-600 hover:bg-green-700'
+                        : saveStatus === 'error'
+                        ? 'bg-red-500 hover:bg-red-600'
+                        : 'bg-green-500 hover:bg-green-600'
+                    }`}
                   >
-                    Save
+                    {saveStatus === 'saving' ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Saving...
+                      </span>
+                    ) : saveStatus === 'saved' ? (
+                      <span className="flex items-center">
+                        <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd"/>
+                        </svg>
+                        Saved
+                      </span>
+                    ) : saveStatus === 'error' ? (
+                      <span className="flex items-center">
+                        <svg className="mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd"/>
+                        </svg>
+                        Retry
+                      </span>
+                    ) : (
+                      '💾 Save'
+                    )}
                   </button>
+                  {/* Save Status Indicator */}
+                  {saveStatus !== 'idle' && (
+                    <div className={`px-2 py-1 rounded text-xs font-medium ${
+                      saveStatus === 'saving' 
+                        ? 'bg-blue-100 text-blue-800'
+                        : saveStatus === 'saved'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {saveStatus === 'saving' && 'Saving annotations...'}
+                      {saveStatus === 'saved' && 'All changes saved'}
+                      {saveStatus === 'error' && 'Save failed'}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -424,7 +698,11 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                   style={{ 
                     position: 'relative',
                     zIndex: 2,
-                    cursor: annotationMode === 'none' ? 'default' : 'crosshair'
+                    cursor: annotationMode === 'none' ? 'default' : 
+                           annotationMode === 'erase' ? 'crosshair' :
+                           annotationMode === 'draw' ? 'crosshair' :
+                           annotationMode === 'highlight' ? 'crosshair' :
+                           annotationMode === 'text' ? 'text' : 'crosshair'
                   }}
                 >
                   <Layer>
@@ -453,6 +731,31 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                             fontSize={annotation.fontSize}
                             fill={annotation.fill}
                             onClick={() => annotationMode === 'erase' && deleteAnnotation(annotation.id)}
+                          />
+                        );
+                      } else if (annotation.type === 'image') {
+                        return (
+                          <KonvaImage
+                            key={annotation.id}
+                            x={annotation.x}
+                            y={annotation.y}
+                            width={annotation.width}
+                            height={annotation.height}
+                            image={(() => {
+                              const img = new window.Image();
+                              img.src = annotation.src;
+                              return img;
+                            })()}
+                            draggable={annotationMode === 'none'}
+                            onClick={() => annotationMode === 'erase' && deleteAnnotation(annotation.id)}
+                            onDragEnd={(e) => {
+                              const updatedAnnotations = annotations.map(ann => 
+                                ann.id === annotation.id 
+                                  ? { ...ann, x: e.target.x(), y: e.target.y() }
+                                  : ann
+                              );
+                              setAnnotations(updatedAnnotations);
+                            }}
                           />
                         );
                       }
