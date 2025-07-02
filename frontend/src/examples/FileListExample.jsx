@@ -1,6 +1,6 @@
 // Example usage in your file list component
 import React, { useState, useEffect } from 'react';
-import PDFAnnotator from './PDFAnnotator';
+import PDFAnnotationViewer from '../components/PDFAnnotationViewer';
 import annotationService from '../services/annotationService';
 
 const FileList = () => {
