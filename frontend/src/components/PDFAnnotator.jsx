@@ -1,191 +1,144 @@
 // src/components/PDFAnnotator.jsx
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { annotationService } from "../services/annotationService";
 import "./PDFAnnotator.css";
 
 const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
   const containerRef = useRef(null);
+  const instanceRef = useRef(null);
+
   const [instance, setInstance] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [containerReady, setContainerReady] = useState(false);
 
+  // Poll container size until ready or timeout
   useEffect(() => {
-    const initializeNutrientViewer = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
+    let intervalId;
+    const maxWait = 5000; // 5 seconds max wait
+    const start = Date.now();
 
-        // Ensure container exists and has dimensions
-        const container = document.getElementById('pdf-annotator-container');
-        if (!container) {
-          throw new Error("PDF container element not found");
-        }
-
-        console.log("Container element:", container);
-        console.log("Container dimensions:", {
-          width: container.offsetWidth,
-          height: container.offsetHeight
-        });
-
-        // Import Nutrient SDK dynamically
-        const NutrientSDK = await import("@nutrient-sdk/viewer");
-        console.log("Nutrient SDK loaded:", NutrientSDK);
-        
-        const pdfUrl = annotationService.getPDFUrl(filePath);
-        console.log("Loading PDF from:", pdfUrl);
-
-        // Test if PDF is accessible
-        try {
-          const response = await fetch(pdfUrl, { method: 'HEAD' });
-          if (!response.ok) {
-            throw new Error(`PDF not accessible: ${response.status} ${response.statusText}`);
-          }
-          console.log("PDF is accessible");
-        } catch (fetchError) {
-          console.error("PDF fetch test failed:", fetchError);
-          throw new Error(`Cannot access PDF file: ${fetchError.message}`);
-        }
-        
-        // Initialize Nutrient Web SDK for annotation
-        const viewer = await NutrientSDK.load({
-          container: '#pdf-annotator-container', // Use CSS selector instead of ref
-          document: pdfUrl,
-          // Configuration for annotation functionality
-          initialViewState: {
-            enableAnnotationCreation: true,
-            enableDocumentEditing: true,
-            showToolbar: true,
-            showAnnotationCreationTools: true,
-          },
-          // Customize UI with annotation tools
-          baseUrl: `${window.location.origin}/nutrient-sdk/`,
-          // Full annotation toolbar
-          toolbarItems: [
-            'sidebar-thumbnails',
-            'sidebar-document-outline',
-            'sidebar-annotations',
-            'spacer',
-            'zoom-out',
-            'zoom-in',
-            'zoom-mode',
-            'spacer',
-            'pan',
-            'search',
-            'spacer',
-            'annotate',
-            'spacer',
-            'text',
-            'highlight',
-            'strikeout',
-            'underline',
-            'spacer',
-            'ink',
-            'spacer',
-            'line',
-            'rectangle',
-            'ellipse',
-            'spacer',
-            'note',
-            'spacer',
-            'print',
-            'download'
-          ],
-        });
-
-        console.log("Nutrient SDK viewer initialized:", viewer);
-
-        // Set up event listeners for tracking changes
-        viewer.addEventListener("annotationsChange", () => {
-          console.log("Annotations changed");
-        });
-
-        viewer.addEventListener("documentLoaded", () => {
-          console.log("Document loaded successfully");
-          setIsLoading(false);
-        });
-
-        viewer.addEventListener("documentLoadFailed", (error) => {
-          console.error("Document load failed:", error);
-          setError("Failed to load PDF document. Please check the file path and try again.");
-          setIsLoading(false);
-        });
-
-        setInstance(viewer);
-
-      } catch (err) {
-        console.error("Error initializing PDF annotation viewer:", err);
-        setError(`Failed to load PDF annotation viewer: ${err.message}`);
+    const checkContainer = () => {
+      const container = containerRef.current;
+      if (container && container.offsetWidth > 0 && container.offsetHeight > 0) {
+        setContainerReady(true);
+        clearInterval(intervalId);
+        return true;
+      }
+      if (Date.now() - start > maxWait) {
+        clearInterval(intervalId);
+        setError("PDF container not ready in time.");
         setIsLoading(false);
+        return false;
+      }
+      return false;
+    };
+
+    if (!checkContainer()) {
+      intervalId = setInterval(checkContainer, 100);
+    }
+
+    return () => {
+      if (intervalId) clearInterval(intervalId);
+    };
+  }, []);
+
+  // Initialize the PDF viewer once container is ready and filePath is set
+  useEffect(() => {
+    let mounted = true;
+
+    if (!containerReady || !filePath) {
+      return;
+    }
+
+    const container = containerRef.current;
+
+    const initializeViewer = async () => {
+      try {
+        console.log("Initializing viewer with container dimensions:", {
+          width: container.offsetWidth,
+          height: container.offsetHeight,
+        });
+
+        const { NutrientViewer } = await import("@nutrient-sdk/viewer");
+
+        if (!mounted) return;
+
+        const viewer = new NutrientViewer({
+          container,
+          documentPath: annotationService.getPDFUrl(filePath),
+          viewerConfig: {
+            enableAnnotations: true,
+            renderMode: "canvas",
+            backgroundColor: "#ffffff",
+          },
+        });
+
+        try {
+          await viewer.initialize();
+        } catch (initErr) {
+          console.error("viewer.initialize() failed:", initErr);
+          if (mounted) {
+            setError(`Viewer initialization failed: ${initErr.message}`);
+            setIsLoading(false);
+          }
+          return;
+        }
+
+        if (!mounted) return;
+
+        instanceRef.current = viewer;
+        setInstance(viewer);
+        setIsLoading(false);
+        setError(null);
+        console.log("Viewer initialized successfully");
+      } catch (err) {
+        console.error("Initialization error:", err);
+        if (mounted) {
+          setError(`Failed to load PDF viewer: ${err.message}`);
+          setIsLoading(false);
+        }
       }
     };
 
-    // Add a small delay to ensure the container is fully rendered
-    const timeoutId = setTimeout(initializeNutrientViewer, 100);
+    setIsLoading(true);
+    setError(null);
+    initializeViewer();
 
     return () => {
-      clearTimeout(timeoutId);
+      mounted = false;
+      if (instanceRef.current) {
+        instanceRef.current.dispose();
+        instanceRef.current = null;
+      }
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filePath, containerReady]);
 
-  // Separate effect to handle file path changes  
-  useEffect(() => {
-    if (instance && filePath) {
-      // If we need to load a different file, dispose current instance and reinitialize
-      console.log("File path changed, reinitializing viewer");
-      instance.dispose();
+  const handleClose = useCallback(() => {
+    if (instanceRef.current) {
+      instanceRef.current.dispose();
+      instanceRef.current = null;
       setInstance(null);
-      setIsLoading(true);
-      
-      // Trigger reinitialization after cleanup
-      setTimeout(() => {
-        window.location.reload(); // Simple approach for now
-      }, 100);
     }
-  }, [filePath]); // eslint-disable-line react-hooks/exhaustive-deps
+    onClose();
+  }, [onClose]);
 
-  const handleSave = async () => {
-    if (!instance) return;
+  const handleSave = useCallback(async () => {
+    if (!instanceRef.current) return;
 
     try {
       setIsSaving(true);
-      
-      // Export the annotated PDF
-      const annotatedPDF = await instance.exportPDF();
-      
-      // Convert to blob
-      const blob = new Blob([annotatedPDF], { type: 'application/pdf' });
-      
-      // Save using our annotation service
-      const result = await annotationService.saveAnnotatedPDF(fileId, blob);
-      
-      console.log("Annotations saved successfully:", result);
-      
-      // Call parent callback
-      if (onSave) {
-        onSave(result);
-      }
-      
+      const annotations = await instanceRef.current.getAnnotations();
+      await onSave(annotations);
     } catch (err) {
-      console.error("Error saving annotations:", err);
+      console.error("Failed to save annotations:", err);
       setError("Failed to save annotations. Please try again.");
     } finally {
       setIsSaving(false);
     }
-  };
+  }, [onSave]);
 
-  const handleClose = () => {
-    if (instance) {
-      try {
-        instance.dispose();
-      } catch (err) {
-        console.error("Error disposing Nutrient SDK instance:", err);
-      }
-    }
-    onClose();
-  };
-
-  // Loading state
   if (isLoading) {
     return (
       <div className="pdf-annotator">
@@ -197,13 +150,15 @@ const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
         </div>
         <div className="loading-container">
           <div className="loading-spinner"></div>
-          <p>Loading PDF annotation editor...</p>
+          <p>
+            Loading PDF annotation editor...{" "}
+            {containerReady ? "(Initializing viewer)" : "(Preparing container)"}
+          </p>
         </div>
       </div>
     );
   }
 
-  // Error state
   if (error) {
     return (
       <div className="pdf-annotator">
@@ -221,9 +176,9 @@ const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
               <button onClick={() => window.location.reload()} className="retry-btn">
                 Retry
               </button>
-              <a 
-                href={annotationService.getPDFUrl(filePath)} 
-                target="_blank" 
+              <a
+                href={annotationService.getPDFUrl(filePath)}
+                target="_blank"
                 rel="noopener noreferrer"
                 className="view-pdf-btn"
               >
@@ -236,45 +191,34 @@ const PDFAnnotator = ({ fileId, filePath, onSave, onClose }) => {
     );
   }
 
-  // Main component render
   return (
     <div className="pdf-annotator">
       <div className="annotator-header">
         <h3>PDF Annotator</h3>
         <div className="annotator-controls">
-          <button 
-            onClick={handleSave} 
-            disabled={isSaving}
-            className="save-btn"
-          >
-            {isSaving ? 'Saving...' : '💾 Save Annotations'}
+          <button onClick={handleSave} disabled={isSaving || !instance} className="save-btn">
+            {isSaving ? "Saving..." : "💾 Save Annotations"}
           </button>
           <button onClick={handleClose} className="close-btn">
             ✕ Close
           </button>
         </div>
       </div>
-      
-      {/* Nutrient SDK Container */}
-      <div 
+
+      <div
         id="pdf-annotator-container"
-        ref={containerRef} 
+        ref={containerRef}
         className="nutrient-container"
-        style={{ 
-          width: '100%', 
-          height: 'calc(100vh - 80px)',
-          border: 'none'
+        style={{
+          width: "100%",
+          height: "calc(100vh - 80px)",
+          minHeight: "400px",
+          position: "relative",
+          backgroundColor: "#f5f5f5",
+          border: "1px solid #ddd",
+          opacity: isLoading ? 0.5 : 1,
         }}
       />
-      
-      {isSaving && (
-        <div className="saving-overlay">
-          <div className="saving-message">
-            <div className="loading-spinner"></div>
-            <span>Saving annotations...</span>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

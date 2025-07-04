@@ -100,11 +100,16 @@ const userRoutes = require("./routes/userRoutes");
 const authRoutes = require("./routes/authRoutes");
 const uploadRoutes = require("./routes/uploadRoutes");
 const annotationRoutes = require("./routes/annotationRoutes");
+const quizRoutes = require('./routes/quizRoutes');
+const stickynotesRoutes = require('./routes/stickynotesRoutes');
+
 // Mount routes
 
 app.use("/api/user", userRoutes);
 app.use("/api/uploads", uploadRoutes);
 app.use("/api/annotations", annotationRoutes);
+app.use('/api/quiz', quizRoutes);
+app.use('/api/stickynotes', stickynotesRoutes);
 
 app.use("/auth", authRoutes);
 app.get("/", (req, res) => {

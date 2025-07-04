@@ -1,0 +1,89 @@
+
+
+Subject: Request for Anonymized Patient Data for Research on Early Detection of Heart 
+Disease 
+Dear Sir/Madam, 
+We hope this letter finds you well. We are a research team from the Department of Computer 
+Science and Engineering at Bangladesh University of Engineering and Technology (BUET), 
+currently engaged in a project on early detection of heart disease using advanced machine 
+learning algorithms. The goal of our study is to develop a predictive system that can identify 
+patients at risk of heart disease at an early stage—thereby facilitating timely medical intervention 
+and improving overall healthcare outcomes. 
+To ensure the accuracy, robustness, and real-world applicability of our models, we are seeking 
+access to anonymized patient health records containing a comprehensive set of diagnostic and 
+lifestyle-related attributes. 
+We are specifically interested in the following medical and lifestyle attributes: 
+Medical Attributes 
+1. Age ( range 15–40) 
+2. Sex (male/ female) 
+3. Chest pain type (1.typical angina, 2.atypical angina, 3.non-anginal pain, 4. asymptomatic) 
+4. Resting blood pressure (mmHg) 
+5. HDL/LDL cholesterol levels (mg/dL) 
+6. Fasting blood sugar (>120 mg/dL) 
+7. Blood sugar levels (HbA1c) 
+8. Random blood sugar  
+9. Resting electrocardiographic results  
+10. Maximum heart rate achieved 
+11. Exercise-induced angina (Yes / No) 
+12. Body Mass Index (BMI) 
+13. Diabetes status (Type 2 history) (Yes / No) 
+14. Family history of heart disease (Yes / No) 
+15. Triglyceride levels (mg/dL) 
+16. Diagnosis (Yes / No)  if yes → 
+I. Myocardial Infarction (MI) 
+II. Congestive Heart Failure (CHF) 
+III. Valvular Heart Disease (VHD) 
+IV. Atrioventricular (AV) Block 
+ 
+
+Lifestyle & Socio-Demographic Attributes 
+1. Smoking status (current / former / non-smoker) 
+2. Physical activity level (sedentary / moderate / active) 
+3. Alcohol consumption (none / occasionally / frequently) 
+4. Dietary habits  
+5. Stress level / mental health (low / medium / high) 
+6. Sleep duration and quality (poor / fair / good) 
+7. Occupation type  
+8. Marital status  
+ 
+We assure you that: 
+➢ The data will be used strictly for academic and research purposes. 
+➢ No personally identifiable information (PII) will be collected or disclosed. 
+➢ Data will be securely stored in compliance with all applicable ethical and privacy 
+standards. 
+➢ We are fully prepared to sign a Non-Disclosure Agreement (NDA) or Data Sharing 
+Agreement (DSA), as required by your institution. 
+ 
+Your support in providing such data will significantly contribute to the development of 
+innovative healthcare technologies aimed at early intervention and preventive care. 
+Should you have any questions or require further information, we would be happy to provide 
+additional details or arrange a meeting. You may reach us at the contact information provided 
+below. 
+Thank you very much for considering our request. We look forward to your kind cooperation. 
+Sincerely, 
+ Adibah Mahmud 
+ Sadia Afrin Sithi 
+ Department of Computer Science and Engineering 
+ Bangladesh University of Engineering and Technology (BUET) 
+ 
+Contact Information 
+ Emails: 
+ adibahmahima@gmail.com  
+ sadiasithi2001@gmail.com 
+
+Phone Numbers: 
+ Adibah – 01731-055838 
+ Sithi – 01755-709664 
+ 
+Research Supervision : 
+This research project is being conducted under the supervision of: 
+Dr. Sadia Sharmin 
+Associate Professor 
+Department of Computer Science and Engineering 
+Bangladesh University of Engineering and Technology(BUET) 
+Phone: 01817-108555 
+Email:sadiasharmin@cse.buet.ac.bd 
+ 
+ 
+ 
+ 

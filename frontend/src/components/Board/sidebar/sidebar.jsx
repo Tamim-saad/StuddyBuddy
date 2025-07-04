@@ -4,8 +4,10 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
+  Collapse,
 } from "@mui/material";
-
+import ExpandLess from "@mui/icons-material/ExpandLess";
+import ExpandMore from "@mui/icons-material/ExpandMore";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import AssignmentIcon from "@mui/icons-material/Assignment";
 import FolderIcon from "@mui/icons-material/Folder";
@@ -16,6 +18,8 @@ import ForumIcon from "@mui/icons-material/Forum";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import LogoutIcon from "@mui/icons-material/Logout";
 import NotificationsIcon from "@mui/icons-material/Notifications";
+import CreateIcon from "@mui/icons-material/Create";
+import VisibilityIcon from "@mui/icons-material/Visibility";
 
 import { amber } from "@mui/material/colors";
 import React, { useState } from "react";
@@ -25,6 +29,8 @@ const Sidebar = () => {
   const navigate = useNavigate();
   const { projectId } = useParams();
   const [isProjectModalOpen, setisProjectModalOpen] = useState(false);
+  const [openQuiz, setOpenQuiz] = useState(false);
+  const [openSticky, setOpenSticky] = useState(false);
 
   const handleCloseProjectModal = () => {
     setisProjectModalOpen(false);
@@ -33,6 +39,14 @@ const Sidebar = () => {
   const handleLogout = () => {
     localStorage.clear();
     navigate("/login");
+  };
+
+  const handleQuizClick = () => {
+    setOpenQuiz(!openQuiz);
+  };
+
+  const handleStickyClick = () => {
+    setOpenSticky(!openSticky);
   };
 
   const menuItems = [
@@ -55,11 +69,38 @@ const Sidebar = () => {
       text: "Quizz",
       icon: <QuizIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
       route: "quiz",
+      hasSubmenu: true,
+      submenu: [
+        {
+          text: "Generate Quiz",
+          icon: <CreateIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+          //route: "quiz/generate",
+          route: "view-files",
+        },
+        {
+          text: "View Quiz",
+          icon: <VisibilityIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+          route: "quiz/view",
+        },
+      ],
     },
     {
       text: "Sticky Notes",
       icon: <StickyNote2Icon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
-      route: "sticky notes",
+      route: "stickynotes",
+      hasSubmenu: true,
+      submenu: [
+        {
+          text: "Generate Notes",
+          icon: <CreateIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+          route: "file-list",
+        },
+        {
+          text: "View Notes",
+          icon: <VisibilityIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+          route: "stickynotes/display",
+        },
+      ],
     },
     {
       text: "Planner",
@@ -110,7 +151,7 @@ const Sidebar = () => {
         className="w-24"
         sx={{
           "& .MuiDrawer-paper": {
-            width: "200px",
+            width: "200px", 
             background: "linear-gradient(180deg, #22c55e 0%, #3b82f6 100%)",
             display: "flex",
             flexDirection: "column",
@@ -123,25 +164,75 @@ const Sidebar = () => {
             <h1 className="text-3xl font-bold mb-6 p-4">Studdy Buddy</h1>
             <List>
               {topItems.map((item) => (
-                <ListItem
-                  key={item.text}
-                  className="rounded-md hover:bg-green-800 flex items-center justify-center cursor-pointer"
-                  sx={{ minHeight: "40px" }}
-                  onClick={() => handleListItemClick(item.route)}
-                >
-                  <ListItemIcon
-                    className="text-white-900 flex items-center justify-center"
-                    sx={{ minWidth: "40px" }}
+                <React.Fragment key={item.text}>
+                  <ListItem
+                    className="rounded-md hover:bg-green-800 flex items-center justify-center cursor-pointer"
+                    sx={{ minHeight: "40px" }}
+                    onClick={() => {
+                      if (item.hasSubmenu) {
+                        if (item.text === "Quizz") {
+                          handleQuizClick();
+                        } else if (item.text === "Sticky Notes") {
+                          handleStickyClick();
+                        }
+                      } else {
+                        handleListItemClick(item.route);
+                      }
+                    }}
                   >
-                    {React.cloneElement(item.icon, {
-                      sx: { fontSize: "1.5rem", color: amber[50] },
-                    })}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.text}
-                    className="text-white text-base"
-                  />
-                </ListItem>
+                    <ListItemIcon
+                      className="text-white-900 flex items-center justify-center"
+                      sx={{ minWidth: "40px" }}
+                    >
+                      {React.cloneElement(item.icon, {
+                        sx: { fontSize: "1.5rem", color: amber[50] },
+                      })}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      className="text-white text-base"
+                    />
+                    {item.hasSubmenu && (
+                      (item.text === "Quizz" ? openQuiz : openSticky) ? (
+                        <ExpandLess sx={{ color: amber[50] }} />
+                      ) : (
+                        <ExpandMore sx={{ color: amber[50] }} />
+                      )
+                    )}
+                  </ListItem>
+
+                  {item.hasSubmenu && (
+                    <Collapse 
+                      in={item.text === "Quizz" ? openQuiz : openSticky} 
+                      timeout="auto" 
+                      unmountOnExit
+                    >
+                      <List component="div" disablePadding>
+                        {item.submenu.map((subItem) => (
+                          <ListItem
+                            key={subItem.text}
+                            className="rounded-md hover:bg-green-800 flex items-center justify-center cursor-pointer"
+                            sx={{ pl: 4, minHeight: "40px" }}
+                            onClick={() => handleListItemClick(subItem.route)}
+                          >
+                            <ListItemIcon
+                              className="text-white-900 flex items-center justify-center"
+                              sx={{ minWidth: "40px" }}
+                            >
+                              {React.cloneElement(subItem.icon, {
+                                sx: { fontSize: "1.5rem", color: amber[50] },
+                              })}
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={subItem.text}
+                              className="text-white text-base"
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Collapse>
+                  )}
+                </React.Fragment>
               ))}
             </List>
           </div>

@@ -56,7 +56,7 @@ export const FileList = ({
                 {file.indexing_status === 'pending' ? (
                   <Tooltip title="Start Indexing">
                     <IconButton 
-                      onClick={() => onStartIndexing(file.id)}
+                      onClick={() => onStartIndexing(file.id,file.file_url)}
                       size="small"
                     >
                       <PlayArrowIcon color="primary" />

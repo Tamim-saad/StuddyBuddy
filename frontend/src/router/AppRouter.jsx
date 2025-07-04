@@ -6,6 +6,13 @@ import { Dashboard } from "../components/project/Dashboard";
 import { UserProfile } from "../components/auth/UserProfile";
 import propTypes from "prop-types";
 import { FileUpload } from "../components/file/FileUpload";
+import { FileView } from "../components/quizz/FileView";
+import { MCQDisplay } from "../components/quizz/MCQDisplay";
+import { CQDisplay } from '../components/quizz/CQDisplay';
+import { FileLists } from "../components/stickynotes/FileLists";
+import { StickynotesDisplay } from "../components/stickynotes/StickynotesDisplay";
+
+
 const Layout = () => {
   return (
     <div className="flex">
@@ -46,7 +53,31 @@ export const router = createBrowserRouter([
         path: "uploads",
         element: <FileUpload />,
       },
-
+      {
+        path: "view-files",
+        element: <FileView />,
+      },
+      {
+        path: "quiz",
+        children: [
+          {
+            path: "mcq-display",
+            element: <MCQDisplay />,
+          },
+          {
+            path: "cq-display",
+            element: <CQDisplay />,
+          }
+        ],
+      },
+      {
+        path: "file-list",
+        element: <FileLists />,
+      },
+      {
+        path: "stickynotes",
+        element: <StickynotesDisplay />,
+      }
     ],
   },
 ]);
