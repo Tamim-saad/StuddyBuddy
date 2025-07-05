@@ -18,10 +18,10 @@ jobs:
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@v3
     
     - name: Deploy to Azure VM
-      uses: appleboy/ssh-action@v1.0.3
+      uses: appleboy/ssh-action@v0.1.10
       with:
         host: ${{ secrets.VM_HOST }}
         username: ${{ secrets.VM_USER }}
