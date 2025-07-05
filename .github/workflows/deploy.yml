@@ -57,6 +57,7 @@ jobs:
           EMAIL_USER=${{ secrets.EMAIL_USER }}
           EMAIL_PASS=${{ secrets.EMAIL_PASS }}
           GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+          OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}
           REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
           
           # Azure VM URLs
@@ -66,6 +67,9 @@ jobs:
           
           # Database Configuration
           POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/postgres
+          
+          # Vector Database Configuration
+          QDRANT_URL=http://qdrant:6333
           
           # Docker Configuration
           COMPOSE_PROJECT_NAME=studdybuddy
