@@ -51,6 +51,7 @@ jobs:
           echo "🔧 Creating environment configuration..."
           cat > .env << EOF
           # Production Environment Variables
+          NODE_ENV=production
           PORT=4000
           JWT_SECRET=${{ secrets.JWT_SECRET }}
           EMAIL_USER=${{ secrets.EMAIL_USER }}

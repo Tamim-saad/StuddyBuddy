@@ -3,8 +3,8 @@
 const { Pool } = require("pg");
 
 const pool = new Pool({
-  connectionString: process.env.POSTGRES_URI || 'postgresql://postgres:postgres@localhost:5432/postgres',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  connectionString: process.env.POSTGRES_URI || 'postgresql://postgres:postgres@postgres:5432/postgres',
+  ssl: false, // Disable SSL for local Docker environment
 });
 
 const connectDB = async () => {
