@@ -28,7 +28,7 @@ export const FileUpload = () => {
     try {
       setLoading(true);
       const response = await uploadService.getFiles();
-      
+
       // No need for simulated progress when loading files
       setFiles(Array.isArray(response.files) ? response.files : []);
     } catch (error) {
@@ -49,7 +49,7 @@ export const FileUpload = () => {
       const intervalDuration = 30; // More frequent updates (30ms)
       const initialDelay = 500; // Initial delay before starting
       const completionDelay = 800; // Delay after reaching 100%
-      
+
       let progress = 0;
       let uploadInterval;
 
@@ -123,12 +123,21 @@ export const FileUpload = () => {
       });
     }
   };
-  
 
-  const handleStartIndexing = async (fileId) => {
+
+  const handleStartIndexing = async (fileId,fileUrl) => {
     try {
       setIndexingFiles(prev => new Set([...prev, fileId]));
       
+      // Find the file with the given ID
+      const fileToIndex = files.find(file => file.id === fileId);
+      if (!fileToIndex) {
+        throw new Error('File not found');
+      }
+
+      // Remove 'uploads/' prefix from file_url if it exists
+      // const fileUrl = fileToIndex.file_url.replace(/^\/uploads\/|^uploads\//, '');
+      console.log('Starting indexing for file:', fileId, 'URL:', fileUrl);
       // Update file status locally
       setFiles(prevFiles => 
         prevFiles.map(file => 
@@ -138,11 +147,8 @@ export const FileUpload = () => {
         )
       );
 
-      // Simulate indexing progress
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      // Start actual indexing
-      await uploadService.startIndexing(fileId);
+      // Start actual indexing with formatted URL
+      await uploadService.startIndexing(fileUrl);
 
       // Update file status after completion
       setFiles(prevFiles => 
@@ -154,6 +160,14 @@ export const FileUpload = () => {
       );
     } catch (error) {
       console.error('Indexing error:', error);
+      // Update file status to failed on error
+      setFiles(prevFiles => 
+        prevFiles.map(file => 
+          file.id === fileId 
+            ? { ...file, indexing_status: 'failed' }
+            : file
+        )
+      );
     } finally {
       setIndexingFiles(prev => {
         const next = new Set(prev);
@@ -258,9 +272,9 @@ export const FileUpload = () => {
       {/* Display upload progress bar only when uploading */}
       {isUploading && (
         <Box sx={{ width: '100%', mb: 2 }}>
-          <LinearProgress 
-            variant="determinate" 
-            value={uploadProgress} 
+          <LinearProgress
+            variant="determinate"
+            value={uploadProgress}
             sx={{
               height: 8,
               borderRadius: 5,
@@ -272,10 +286,10 @@ export const FileUpload = () => {
               }
             }}
           />
-          <Typography 
-            variant="body2" 
-            color="textSecondary" 
-            align="center" 
+          <Typography
+            variant="body2"
+            color="textSecondary"
+            align="center"
             sx={{ mt: 1 }}
           >
             {`${Math.round(uploadProgress)}%`}
@@ -289,12 +303,15 @@ export const FileUpload = () => {
           <CircularProgress size={40} sx={{ color: 'purple' }} />
         </Box>
       ) : (
-        <FileList 
-          files={filteredFiles}
+        <FileList
+          files={filteredFiles.map(file => ({
+            ...file,
+            fileUrl: file.file_url?.replace(/^uploads\//, '') // Remove 'uploads/' prefix
+          }))}
           selectedFiles={selectedFiles}
           onSelectFile={(id) => {
-            setSelectedFiles(prev => 
-              prev.includes(id) 
+            setSelectedFiles(prev =>
+              prev.includes(id)
                 ? prev.filter(fileId => fileId !== id)
                 : [...prev, id]
             );

@@ -42,13 +42,16 @@ export const uploadService = {
     });
   },
 
-  async startIndexing(id) {
+  async startIndexing(fileUrl) {
     const accessToken = authServices.getAccessToken();
     const response = await axios.post(
-      `${API_BASE_URL}/api/uploads/${id}/index`,
-      null,
+      `${API_BASE_URL}/api/uploads/extract-text`,
+      {
+        file_url: fileUrl
+      },
       {
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${accessToken}`
         }
       }

@@ -4,6 +4,11 @@ const router = express.Router();
 const path = require('path');
 const { Pool } = require('pg');
 const { authenticateToken } = require('../middleware/authMiddleware');
+const fsSync = require('fs');
+const fs = require('fs').promises;
+const pdf = require('pdf-parse');
+const { generateEmbeddings, generateSummary } = require('../utils/AI');
+const { storeDocumentChunks } = require('../utils/qdrantClient');
 
 // Initialize PostgreSQL connection
 const pool = new Pool({
@@ -369,5 +374,172 @@ router.get('/:fileId/info', authenticateToken, async (req, res) => {
     });
   }
 });
+
+// Extract text from PDF route with logging and file status tracking
+router.post('/extract-text', authenticateToken, async (req, res) => {
+  const { file_url } = req.body;
+  const userId = req.user.id;
+
+  try {
+    // Get file ID from database using file_url
+    const fileResult = await pool.query(
+      'SELECT id FROM chotha WHERE file_url = $1 AND user_id = $2',
+      [file_url, userId]
+    );
+
+    if (fileResult.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found or unauthorized' });
+    }
+
+    const fileId = fileResult.rows[0].id;
+
+    // Normalize file path
+    const relativePath = file_url.startsWith('/') ? file_url.slice(1) : file_url;
+    const absolutePath = path.join(__dirname, '..', relativePath);
+
+    const fileName = path.basename(absolutePath); // "1750646129015-432706240.pdf"
+    const userDir = path.dirname(absolutePath);   // "uploads/10"
+    const statusFilePath = path.join(userDir, `extract_${fileName}.status`);
+
+    try {
+      //await fs.writeFile(statusFilePath, 'in_progress');
+
+      const dataBuffer = await fs.readFile(absolutePath);
+      const data = await pdf(dataBuffer);
+
+      // Split text into chunks
+      const chunks = chunkText(data.text, 1000);
+      
+      // Process chunks with embeddings and summaries
+      const processedChunks = await Promise.all(chunks.map(async (text, index) => {
+        const embedding = await generateEmbeddings(text);
+        return {
+          text,
+          embedding,
+          index
+        };
+      }));
+
+      // Store in Qdrant
+      const storedCount = await storeDocumentChunks(fileId, processedChunks);
+
+      // Update file status with proper error handling
+      try {
+        await pool.query(
+          `UPDATE chotha 
+           SET processing_status = $1,
+               indexing_status = $2,
+               processed_at = NOW()
+           WHERE id = $3`,
+          ['vectorized', 'completed', fileId]
+        );
+      } catch (error) {
+        console.error('Failed to update processing status:', error);
+        // Continue execution as this is not critical
+      }
+
+      res.json({
+        success: true,
+        chunks: storedCount,
+        textPreview: data.text.substring(0, 200) + '...'
+      });
+
+    } catch (error) {
+      console.error('Text processing error:', error);
+      res.status(500).json({
+        error: 'Failed to process document',
+        details: error.message
+      });
+    }
+  } catch (error) {
+    console.error('Error extracting text:', error);
+    res.status(500).json({ 
+      error: 'Failed to extract text from PDF',
+      details: error.message 
+    });
+  }
+});
+
+// Add semantic search endpoint
+router.get('/search/semantic', authenticateToken, async (req, res) => {
+  try {
+    const { query, limit = 5, fileId } = req.query;
+    
+    // Generate embedding for search query
+    const queryEmbedding = await generateEmbeddings(query);
+
+    // Search in Qdrant
+    const results = await searchSimilarChunks(
+      queryEmbedding, 
+      parseInt(limit),
+      fileId ? parseInt(fileId) : null
+    );
+
+    res.json({
+      results: results.map(r => ({
+        text: r.payload.text,
+        summary: r.payload.summary,
+        score: r.score,
+        fileId: r.payload.file_id
+      })),
+      query,
+      total: results.length
+    });
+
+  } catch (error) {
+    console.error('Semantic search error:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
+// Test Qdrant connection and functionality
+router.get('/test-qdrant', authenticateToken, async (req, res) => {
+  try {
+    const { client } = require('../utils/qdrantClient');
+    console.log(client);
+    
+    // Test connection
+    const collections = await client.getCollections();
+    console.log('Available collections:', collections);
+
+    // Test collection creation
+    await client.createCollection('test_collection', {
+      vectors: {
+        size: 768,
+        distance: "Cosine"
+      }
+    });
+
+    res.json({ 
+      status: 'success',
+      message: 'Qdrant connection successful',
+      collections: collections 
+    });
+
+  } catch (error) {
+    console.error('Qdrant test error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+const chunkText = (text, maxLength = 1000) => {
+  const sentences = text.split(/[.!?]+/);
+  const chunks = [];
+  let currentChunk = '';
+
+  for (const sentence of sentences) {
+    const trimmedSentence = sentence.trim();
+    if (!trimmedSentence) continue;
+
+    if ((currentChunk + trimmedSentence).length <= maxLength) {
+      currentChunk += trimmedSentence + '. ';
+    } else {
+      if (currentChunk) chunks.push(currentChunk.trim());
+      currentChunk = trimmedSentence + '. ';
+    }
+  }
+  
+  if (currentChunk) chunks.push(currentChunk.trim());
+  return chunks;
+};
 
 module.exports = router;

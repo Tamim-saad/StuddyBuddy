@@ -20,6 +20,24 @@ services:
       timeout: 3s
       retries: 3
 
+  qdrant:
+    image: qdrant/qdrant:latest
+    ports:
+      - "6333:6333"
+      - "6334:6334"
+    volumes:
+      - qdrant_data:/qdrant/storage
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    environment:
+      QDRANT_ALLOW_EMPTY_COLLECTION: "true"
+      QDRANT_LOG_LEVEL: "INFO"
+
   backend:
     build: 
       context: ./backend
@@ -37,6 +55,7 @@ services:
       REACT_APP_GOOGLE_CLIENT_ID: ${REACT_APP_GOOGLE_CLIENT_ID}
       FRONTEND_URL: ${FRONTEND_URL}
       REACT_APP_BASE_URL: ${REACT_APP_BASE_URL}
+      QDRANT_URL: http://qdrant:6333
     volumes:
       - uploads_data:/app/uploads
     restart: unless-stopped
@@ -44,6 +63,8 @@ services:
       - app-network
     depends_on:
       postgres:
+        condition: service_healthy
+      qdrant:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4000/"]
@@ -71,6 +92,7 @@ services:
 volumes:
   uploads_data:
   postgres_data:
+  qdrant_data:
 
 networks:
   app-network:
