@@ -1,13 +1,15 @@
 
+# Build stage
 FROM node:20-alpine as build
 
 WORKDIR /app
 
-# Copy package files
+# Copy package files first (for better caching)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci
+# Install dependencies with cache mount for faster rebuilds
+RUN --mount=type=cache,target=/root/.npm \
+    npm ci --no-audit --prefer-offline
 
 # Copy source code
 COPY . .
