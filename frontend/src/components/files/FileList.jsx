@@ -46,14 +46,6 @@ export const FileList = ({
             <TableRow
               key={file.id}
               className="cursor-pointer hover:bg-gray-100"
-              onClick={() =>
-                onViewFile
-                  ? onViewFile(file)
-                  : window.open(
-                      `${process.env.REACT_APP_BASE_URL}/${file.file_path}`,
-                      "_blank"
-                    )
-              }
             >
               <TableCell padding="checkbox">
                 <Checkbox
@@ -87,15 +79,16 @@ export const FileList = ({
                 {new Date(file.date_uploaded).toLocaleDateString()}
               </TableCell>
               <TableCell>
+                
                 {/* View File Button */}
-                {/* <Tooltip title="View File">
+                <Tooltip title="View File">
                   <IconButton 
                     onClick={() => onViewFile ? onViewFile(file) : window.open(`${process.env.REACT_APP_BASE_URL}/${file.file_path}`, '_blank')}
                     size="small"
                   >
                     <VisibilityIcon />
                   </IconButton>
-                </Tooltip> */}
+                </Tooltip>
 
                 {/* More Options */}
                 <IconButton size="small">
