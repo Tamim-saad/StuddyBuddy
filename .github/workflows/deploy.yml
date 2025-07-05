@@ -75,8 +75,12 @@ jobs:
           # Optimized Docker deployment
           echo "🔨 Starting optimized Docker deployment..."
           
-          # Use Docker Compose with parallel builds and cache
-          DOCKER_BUILDKIT=1 COMPOSE_DOCKER_CLI_BUILD=1 docker-compose up -d --build --parallel --remove-orphans
+          # Stop existing containers first
+          docker-compose down --remove-orphans || true
+          
+          # Build and start services with optimizations
+          DOCKER_BUILDKIT=1 docker-compose build --no-cache
+          docker-compose up -d --remove-orphans
           
           # Quick health check with reduced wait time
           echo "🏥 Performing quick health checks..."

@@ -18,7 +18,7 @@ export COMPOSE_DOCKER_CLI_BUILD=1
 
 # Build and deploy with optimizations
 echo "🔨 Building with optimizations..."
-docker-compose build --parallel --no-cache
+docker-compose build --no-cache
 
 echo "🚀 Deploying services..."
 docker-compose up -d --remove-orphans
