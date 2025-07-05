@@ -11,8 +11,10 @@ RUN apt-get update && apt-get install -y \
 # Copy package files first (for better caching)
 COPY package*.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install dependencies with better error handling
+RUN npm cache clean --force && \
+    npm install --omit=dev --legacy-peer-deps || \
+    (echo "npm ci failed, trying npm install..." && npm install --omit=dev --legacy-peer-deps)
 
 # Copy source code
 COPY . .

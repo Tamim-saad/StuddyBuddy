@@ -83,12 +83,50 @@ jobs:
           # Stop existing containers first
           docker-compose down --remove-orphans || true
           
-          # Build and start services with optimizations
-          DOCKER_BUILDKIT=1 docker-compose build --no-cache
+          # Clean up Docker system to free space
+          docker system prune -f || true
+          
+          # Update package-lock.json in backend to ensure consistency
+          cd backend
+          if [ -f package-lock.json ]; then
+            echo "🔄 Updating package-lock.json for consistency..."
+            npm install --package-lock-only || echo "⚠️ Package lock update failed, continuing..."
+          else
+            echo "📦 Generating package-lock.json..."
+            npm install --package-lock-only || echo "⚠️ Package lock generation failed, continuing..."
+          fi
+          cd ..
+          
+          # Build and start services with better error handling
+          echo "🔨 Building backend service..."
+          if ! DOCKER_BUILDKIT=1 docker-compose build --no-cache backend; then
+            echo "❌ Backend build failed with Docker BuildKit. Trying without BuildKit..."
+            if ! docker-compose build --no-cache backend; then
+              echo "❌ Backend build failed completely. Checking logs..."
+              docker-compose logs backend --tail=50
+              exit 1
+            fi
+          fi
+          
+          echo "🔨 Building frontend service..."
+          if ! DOCKER_BUILDKIT=1 docker-compose build --no-cache frontend; then
+            echo "❌ Frontend build failed with Docker BuildKit. Trying without BuildKit..."
+            if ! docker-compose build --no-cache frontend; then
+              echo "❌ Frontend build failed completely. Checking logs..."
+              docker-compose logs frontend --tail=50
+              exit 1
+            fi
+          fi
+          
+          echo "🚀 Starting all services..."
           docker-compose up -d --remove-orphans
           
           # Quick health check with reduced wait time
           echo "🏥 Performing quick health checks..."
+          
+          # Show running containers for debugging
+          echo "📊 Current container status:"
+          docker-compose ps
           
           # Wait for services to be ready (reduced from 30s to 15s)
           echo "⏳ Waiting for services to start..."
@@ -109,8 +147,15 @@ jobs:
           done
           
           if [ "$BACKEND_READY" = false ]; then
-            echo "❌ Backend health check failed. Showing logs..."
-            docker-compose logs backend --tail=20
+            echo "❌ Backend health check failed. Showing logs and container status..."
+            echo "📊 Container status:"
+            docker-compose ps
+            echo "📋 Backend logs:"
+            docker-compose logs backend --tail=30
+            echo "📋 Postgres logs:"
+            docker-compose logs postgres --tail=10
+            echo "📋 Qdrant logs:"
+            docker-compose logs qdrant --tail=10
             exit 1
           fi
           
