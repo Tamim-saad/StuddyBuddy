@@ -428,9 +428,10 @@ router.post('/extract-text', authenticateToken, async (req, res) => {
         await pool.query(
           `UPDATE chotha 
            SET processing_status = $1,
+               indexing_status = $2,
                processed_at = NOW()
-           WHERE id = $2`,
-          ['vectorized', fileId]
+           WHERE id = $3`,
+          ['vectorized', 'completed', fileId]
         );
       } catch (error) {
         console.error('Failed to update processing status:', error);

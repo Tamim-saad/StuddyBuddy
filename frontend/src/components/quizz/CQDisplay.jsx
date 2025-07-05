@@ -16,6 +16,10 @@ import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import Rating from '@mui/material/Rating';
 import StarIcon from '@mui/icons-material/Star';
 import { getAIScore } from '../../services/aiScoring';
+import SaveIcon from '@mui/icons-material/Save';
+import CheckIcon from '@mui/icons-material/Check';
+import { green } from '@mui/material/colors';
+import { authServices } from '../../auth';
 
 export const CQDisplay = () => {
   const location = useLocation();
@@ -29,6 +33,8 @@ export const CQDisplay = () => {
   const [scores, setScores] = useState({});
   const [totalScore, setTotalScore] = useState(0);
   const [loading, setLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const handleAnswerChange = (event) => {
     setAnswers({
@@ -46,8 +52,6 @@ export const CQDisplay = () => {
   const handleBack = () => {
     navigate('/home/quiz');
   };
-
-  
 
   const handleEvaluate = async () => {
     setLoading(true);
@@ -69,6 +73,40 @@ export const CQDisplay = () => {
       console.error('Evaluation error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      const quizData = {
+        file_id: quiz.file_id,
+        title: quiz.title,
+        type: 'cq',
+        questions: quiz.questions,
+        score: totalScore,
+        answers: answers,
+        aiScores: scores
+      };
+
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/quiz/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authServices.getAccessToken()}`,
+        },
+        body: JSON.stringify(quizData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save quiz');
+      }
+
+      setSaved(true);
+    } catch (error) {
+      console.error('Save error:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -218,16 +256,32 @@ export const CQDisplay = () => {
             </Box>
           ))}
 
-          <Button
-            variant="contained"
-            onClick={handleBack}
-            sx={{
-              bgcolor: '#22c55e',
-              '&:hover': { bgcolor: '#16a34a' }
-            }}
-          >
-            Back to Quiz Selection
-          </Button>
+          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}>
+            <Button
+              variant="outlined"
+              onClick={handleBack}
+              sx={{ color: '#22c55e', borderColor: '#22c55e' }}
+            >
+              Back to Quiz Selection
+            </Button>
+            <Button
+              variant="contained"
+              onClick={!isSaving && !saved ? handleSave : undefined}
+              disabled={isSaving || saved}
+              startIcon={saved ? <CheckIcon /> : <SaveIcon />}
+              sx={{
+                bgcolor: saved ? green[600] : '#22c55e',
+                '&:hover': {
+                  bgcolor: saved ? green[700] : '#16a34a',
+                },
+                '&.Mui-disabled': {
+                  bgcolor: '#d1d5db',
+                }
+              }}
+            >
+              {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Quiz'}
+            </Button>
+          </Box>
         </Paper>
       )}
     </Box>

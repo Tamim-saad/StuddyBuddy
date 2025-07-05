@@ -106,7 +106,6 @@ export const FileLists = () => {
   }) || []);
 
 
-  
 
   const handleGenerateStickynotes = async () => {
     const fileId = selectedFiles[0];
@@ -138,7 +137,8 @@ export const FileLists = () => {
       console.log('Generated sticky notes:', data);
       navigate('/home/stickynotes', { 
         state: { stickynotes: data.stickynotes ,
-           file_id: data.file_id
+           file_id: data.file_id,
+           title: data.title 
         } 
       });
     } catch (error) {
@@ -202,8 +202,9 @@ export const FileLists = () => {
                       bgcolor: '#16a34a',
                     },
                     '&.Mui-disabled': {
-                      bgcolor: '#d1d5db',
-                      color: 'rgba(255,255,255,0.8)'
+                      bgcolor: '#22c55e', // Changed from #d1d5db to keep it green
+                      opacity: 0.7, // Added opacity to show disabled state
+                      color: 'white'  // Changed from rgba(255,255,255,0.8) to keep text fully white
                     }
                   }}
                 >

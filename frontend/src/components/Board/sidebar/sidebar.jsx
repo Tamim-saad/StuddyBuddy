@@ -80,7 +80,7 @@ const Sidebar = () => {
         {
           text: "View Quiz",
           icon: <VisibilityIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
-          route: "quiz/view",
+          route: "saved-quiz",
         },
       ],
     },
@@ -98,7 +98,7 @@ const Sidebar = () => {
         {
           text: "View Notes",
           icon: <VisibilityIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
-          route: "stickynotes/display",
+          route: "saved-notes", 
         },
       ],
     },

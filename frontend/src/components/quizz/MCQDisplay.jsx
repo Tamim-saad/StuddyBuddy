@@ -10,6 +10,10 @@ import {
   CircularProgress
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
+import SaveIcon from '@mui/icons-material/Save';
+import CheckIcon from '@mui/icons-material/Check';
+import { green } from '@mui/material/colors';
+import { authServices } from '../../auth';
 
 export const MCQDisplay = () => {
   const location = useLocation();
@@ -20,6 +24,8 @@ export const MCQDisplay = () => {
   const [selectedAnswers, setSelectedAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
   const [score, setScore] = useState(0);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   const handleAnswerSelect = (event) => {
     setSelectedAnswers({
@@ -49,6 +55,39 @@ export const MCQDisplay = () => {
 
   const handleBack = () => {
     navigate('/home/quiz');  // Updated path
+  };
+
+  const handleSave = async () => {
+    try {
+      setIsSaving(true);
+      const quizData = {
+        file_id: quiz.file_id,
+        title: quiz.title,
+        type: 'mcq',
+        questions: quiz.questions,
+        score: score,
+        answers: selectedAnswers
+      };
+
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/quiz/save`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${authServices.getAccessToken()}`,
+        },
+        body: JSON.stringify(quizData)
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save quiz');
+      }
+
+      setSaved(true);
+    } catch (error) {
+      console.error('Save error:', error);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (!quiz) {
@@ -166,6 +205,33 @@ export const MCQDisplay = () => {
               </Typography>
             </Box>
           ))}
+
+          <Box sx={{ mt: 4, display: 'flex', justifyContent: 'space-between' }}>
+            <Button
+              onClick={handleBack}
+              variant="outlined"
+              sx={{ color: '#22c55e', borderColor: '#22c55e' }}
+            >
+              Back to Quiz Selection
+            </Button>
+            <Button
+              variant="contained"
+              onClick={!isSaving && !saved ? handleSave : undefined}
+              disabled={isSaving || saved}
+              startIcon={saved ? <CheckIcon /> : <SaveIcon />}
+              sx={{
+                bgcolor: saved ? green[600] : '#22c55e',
+                '&:hover': {
+                  bgcolor: saved ? green[700] : '#16a34a',
+                },
+                '&.Mui-disabled': {
+                  bgcolor: '#d1d5db',
+                }
+              }}
+            >
+              {saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Quiz'}
+            </Button>
+          </Box>
         </Paper>
       )}
     </Box>

@@ -88,7 +88,7 @@ ${text.substring(0, 3000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4", // or "gpt-3.5-turbo" if you're on the free plan
+      model: "gpt-3.5-turbo", // or "gpt-3.5-turbo" if you're on the free plan
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });
@@ -147,7 +147,7 @@ ${text.substring(0, 3000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4", // or "gpt-3.5-turbo" for the free tier
+      model: "gpt-3.5-turbo", // or "gpt-3.5-turbo" for the free tier
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });
@@ -209,7 +209,7 @@ ${text.substring(0, 3000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });

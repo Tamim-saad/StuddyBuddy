@@ -25,15 +25,17 @@ export const StickynotesDisplay = () => {
   const [flippedCards, setFlippedCards] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-
+  console.log('Location state:', location.state);
   const stickynotes = location.state?.stickynotes || [];
   const fileId = location.state?.file_id;
+  const title = location.state?.title || 'Study Notes';
   console.log('Sticky notes id:', fileId);
+  console.log('Sticky notes title:', title);
 
-  const handleFlip = (noteId) => {
+  const handleFlip = (index) => {
     setFlippedCards(prev => ({
       ...prev,
-      [noteId]: !prev[noteId]
+      [index]: !prev[index]
     }));
   };
 
@@ -53,6 +55,7 @@ export const StickynotesDisplay = () => {
   const handleSave = async () => {
     try {
       setIsSaving(true);
+      console.log(stickynotes);
       console.log('Sending request body:', {
         file_id: fileId,
         notes: stickynotes.map(note => ({
@@ -61,7 +64,7 @@ export const StickynotesDisplay = () => {
           tags: Array.isArray(note.tags) ? note.tags : [],
           importance: note.importance || 'medium'
         })),
-        title: stickynotes[0]?.title || 'Study Notes'
+        title: title,
       });
 
       const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/stickynotes/save`, {
@@ -78,7 +81,7 @@ export const StickynotesDisplay = () => {
             tags: Array.isArray(note.tags) ? note.tags : [],
             importance: note.importance || 'medium'
           })),
-          title: stickynotes[0]?.title || 'Study Notes'
+          title: title,
         })
       });
 
@@ -167,7 +170,7 @@ export const StickynotesDisplay = () => {
 
       <Grid container spacing={4}>
         {stickynotes.map((note, index) => (
-          <Grid item xs={12} sm={6} md={4} key={note.id}>
+          <Grid item xs={12} sm={6} md={4} key={index}>
             <Card
               sx={{
                 height: '100%',
@@ -176,15 +179,19 @@ export const StickynotesDisplay = () => {
                 position: 'relative',
                 transition: 'transform 0.6s',
                 transformStyle: 'preserve-3d',
-                transform: flippedCards[note.id] ? 'rotateY(180deg)' : 'none',
+                transform: flippedCards[index] ? 'rotateY(180deg)' : 'none', // Changed from note.id to index
                 m: 1,
-                p: 1
+                p: 1,
+                backgroundColor: '#fef3c7'
               }}
             >
-              <CardContent sx={{ flexGrow: 1, p: 4 }}>
-                {!flippedCards[note.id] ? (
-                  // Front of card
-                  <Box>
+              <CardContent sx={{ 
+                flexGrow: 1, 
+                p: 4,
+                backfaceVisibility: 'hidden'
+              }}>
+                {!flippedCards[index] ? ( // Changed from note.id to index
+                  <Box sx={{ backfaceVisibility: 'hidden' }}>
                     <Typography variant="h6" gutterBottom>
                       {note.front}
                     </Typography>
@@ -205,10 +212,10 @@ export const StickynotesDisplay = () => {
                     </Box>
                   </Box>
                 ) : (
-                  // Back of card
                   <Box sx={{
                     transform: 'rotateY(180deg)',
-                    height: '100%'
+                    height: '100%',
+                  
                   }}>
                     <Typography>
                       {note.back}
@@ -226,7 +233,7 @@ export const StickynotesDisplay = () => {
                   }}
                 />
                 <IconButton
-                  onClick={() => handleFlip(note.id)}
+                  onClick={() => handleFlip(index)} // Changed from note.id to index
                   size="small"
                 >
                   <FlipIcon />

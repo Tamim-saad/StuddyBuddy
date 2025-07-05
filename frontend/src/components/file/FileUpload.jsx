@@ -8,6 +8,7 @@ import { uploadService } from '../../services';
 import { useCallback } from 'react';
 import PDFAnnotator from '../PDFAnnotator';
 import PDFViewer from '../PDFViewer';
+import { authServices } from '../../auth';
 
 export const FileUpload = () => {
   const [files, setFiles] = useState([]);
@@ -198,6 +199,28 @@ export const FileUpload = () => {
     }
   }, []);
 
+  const handleDeleteFile = async (fileId) => {
+    console.log('Deleting file with ID:', fileId);
+    try {
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/uploads/${fileId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${authServices.getAccessToken()}`
+        }
+      });
+  
+      if (!response.ok) {
+        throw new Error('Failed to delete file');
+      }
+  
+      // Refresh file list after deletion
+      loadFiles();
+    } catch (error) {
+      console.error('Error deleting file:', error);
+      // Handle error (show notification, etc.)
+    }
+  };
+
   // Annotation handlers
   const handleAnnotate = (file) => {
     setAnnotatingFile(file);
@@ -209,6 +232,7 @@ export const FileUpload = () => {
     // Refresh file list to show new annotated file
     loadFiles();
   };
+
 
   const handleAnnotatorClose = () => {
     setAnnotatingFile(null);
@@ -327,6 +351,7 @@ export const FileUpload = () => {
           }}
           onAnnotate={handleAnnotate}
           onViewFile={handleViewFile}
+          onDeleteFile={handleDeleteFile}
         />
       )}
     </Box>

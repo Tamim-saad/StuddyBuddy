@@ -70,29 +70,17 @@ router.post('/generate/mcq', authenticateToken, async (req, res) => {
       file_id
     });
 
-    // Store in database with error handling
-    try {
-      const quizResult = await pool.query(
-        `INSERT INTO quiz (
-          file_id,
-          title,
-          type,
-          priority,
-          questions,
-          created_at
-        ) VALUES ($1, $2, $3, $4, $5, NOW())
-        RETURNING *`,
-        [file_id, title, 'mcq', priority, JSON.stringify(mcqData.questions)]
-      );
-
-      res.json({
-        success: true,
-        quiz: quizResult.rows[0]
-      });
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      res.status(500).json({ error: 'Failed to save quiz' });
-    }
+    // Return generated quiz without saving
+    res.json({
+      success: true,
+      quiz: {
+        file_id,
+        title,
+        type: 'mcq',
+        priority,
+        questions: mcqData.questions
+      }
+    });
 
   } catch (error) {
     console.error('Quiz generation error:', error);
@@ -158,29 +146,17 @@ router.post('/generate/cq', authenticateToken, async (req, res) => {
     const fullText = chunks.points.map(point => point.payload.text).join(' ');
     const cqData = await generateCQs(fullText, questionCount);
 
-    // Store in database with error handling
-    try {
-      const quizResult = await pool.query(
-        `INSERT INTO quiz (
-          file_id,
-          title,
-          type,
-          priority,
-          questions,
-          created_at
-        ) VALUES ($1, $2, $3, $4, $5, NOW())
-        RETURNING *`,
-        [file_id, title, 'cq', priority, JSON.stringify(cqData)]
-      );
-
-      res.json({
-        success: true,
-        quiz: quizResult.rows[0]
-      });
-    } catch (dbError) {
-      console.error('Database error:', dbError);
-      res.status(500).json({ error: 'Failed to save quiz' });
-    }
+    // Return generated quiz without saving
+    res.json({
+      success: true,
+      quiz: {
+        file_id,
+        title,
+        type: 'cq',
+        priority,
+        questions: cqData
+      }
+    });
 
   } catch (error) {
     console.error('Quiz generation error:', error);
@@ -281,6 +257,49 @@ router.post('/evaluate', async (req, res) => {
   } catch (error) {
     console.error('Evaluation error:', error);
     res.status(500).json({ error: 'Evaluation failed' });
+  }
+});
+
+// Add new save endpoint
+router.post('/save', authenticateToken, async (req, res) => {
+  try {
+    const { file_id, title, type, questions } = req.body;
+    let { priority = 0 } = req.body;
+
+    // Validate required fields
+    if (!file_id || !type || !questions) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    // file_id: quiz.file_id,
+    //     title: quiz.title,
+    //     type: 'mcq',
+    //     questions: quiz.questions,
+    //     score: score,
+    //     answers: selectedAnswers
+
+    // Save to database
+    const quizResult = await pool.query(
+      `INSERT INTO quiz (
+        file_id,
+        title,
+        type,
+        priority,
+        questions,
+        created_at
+      ) VALUES ($1, $2, $3, $4, $5, NOW())
+      RETURNING *`,
+      [file_id, title, type, priority, JSON.stringify(questions)]
+    );
+
+    res.json({
+      success: true,
+      quiz: quizResult.rows[0]
+    });
+
+  } catch (error) {
+    console.error('Error saving quiz:', error);
+    res.status(500).json({ error: 'Failed to save quiz' });
   }
 });
 
