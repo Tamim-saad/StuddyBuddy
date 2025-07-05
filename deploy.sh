@@ -117,6 +117,14 @@ deploy_application() {
     print_status "Waiting for services to start..."
     sleep 45
     
+    print_status "Running database migrations..."
+    if [ -f "./migrate-db.sh" ]; then
+        ./migrate-db.sh
+        print_success "Database migration completed"
+    else
+        print_warning "Database migration script not found"
+    fi
+    
     print_status "Checking deployment status..."
     docker-compose ps
     
@@ -132,6 +140,25 @@ deploy_application() {
 # Check application health
 check_health() {
     print_status "Checking application health..."
+    
+    # Check Qdrant health
+    QDRANT_READY=false
+    for i in {1..5}; do
+        if curl -f --max-time 10 "http://localhost:6333/health" &> /dev/null; then
+            print_success "Qdrant vector database is healthy"
+            QDRANT_READY=true
+            break
+        else
+            print_status "Waiting for Qdrant... (attempt $i/5)"
+            sleep 10
+        fi
+    done
+    
+    if [ "$QDRANT_READY" = false ]; then
+        print_error "Qdrant health check failed"
+        print_status "Qdrant logs:"
+        docker-compose logs qdrant --tail=20
+    fi
     
     # Check backend health with retry
     BACKEND_READY=false
@@ -195,6 +222,7 @@ setup_firewall() {
         sudo ufw allow 22    # SSH
         sudo ufw allow 80    # HTTP
         sudo ufw allow 4000  # Backend API
+        sudo ufw allow 6333  # Qdrant vector database
         sudo ufw --force enable
         print_success "Firewall configured"
     else
@@ -218,12 +246,14 @@ main() {
     echo "📱 Your application is now accessible at:"
     echo "   Frontend: http://$VM_IP"
     echo "   Backend API: http://$VM_IP:4000"
+    echo "   Qdrant Dashboard: http://$VM_IP:6333/dashboard"
     echo ""
     echo "🔧 Useful commands:"
     echo "   View logs: docker-compose logs -f"
     echo "   Restart services: docker-compose restart"
     echo "   Stop services: docker-compose down"
     echo "   View status: docker-compose ps"
+    echo "   Run DB migration: ./migrate-db.sh"
 }
 
 # Handle script arguments

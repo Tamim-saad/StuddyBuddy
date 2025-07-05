@@ -1,9 +1,12 @@
-FROM node:20-alpine
+FROM node:20-slim
 
 WORKDIR /app
 
-# Install curl for health checks
-RUN apk add --no-cache curl
+# Install curl and necessary libraries for health checks and AI libraries
+RUN apt-get update && apt-get install -y \
+    curl \
+    libgomp1 \
+    && rm -rf /var/lib/apt/lists/*
 
 # Copy package files first (for better caching)
 COPY package*.json ./
