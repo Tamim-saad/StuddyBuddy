@@ -22,33 +22,54 @@ try {
 
 // Helper function to parse JSON response from OpenAI
 const parseJSONResponse = (response) => {
+  console.log('Attempting to parse OpenAI response:', response);
+  
   try {
     // First try to parse as-is
     return JSON.parse(response);
   } catch (error) {
+    console.log('Direct JSON parse failed, trying to clean response...');
+    
     // If that fails, try to extract JSON from markdown code blocks
     try {
       // Remove markdown code block markers
       let cleaned = response.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
       
-      // Try to find JSON-like content between curly braces
+      // Remove any leading/trailing whitespace
+      cleaned = cleaned.trim();
+      
+      // Try to find JSON-like content between curly braces (for objects)
       const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
       if (jsonMatch) {
+        console.log('Found JSON object, attempting to parse...');
         return JSON.parse(jsonMatch[0]);
       }
       
       // If no curly braces found, try to find array content
       const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
       if (arrayMatch) {
+        console.log('Found JSON array, attempting to parse...');
         return JSON.parse(arrayMatch[0]);
       }
       
+      // Remove any non-JSON text before the actual JSON
+      const lines = cleaned.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('{') || line.startsWith('[')) {
+          const remainingText = lines.slice(i).join('\n');
+          console.log('Found JSON starting line, attempting to parse...');
+          return JSON.parse(remainingText);
+        }
+      }
+      
       // If all else fails, try to parse the cleaned string
+      console.log('Attempting to parse cleaned string as last resort...');
       return JSON.parse(cleaned);
     } catch (parseError) {
-      console.error('Failed to parse JSON response:', response);
+      console.error('Failed to parse JSON response after all attempts:', response);
       console.error('Parse error:', parseError);
-      throw new Error(`Invalid JSON response: ${response}`);
+      throw new Error(`Invalid JSON response: ${response.substring(0, 200)}...`);
     }
   }
 };
