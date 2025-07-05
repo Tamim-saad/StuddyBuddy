@@ -2,7 +2,56 @@ const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
 const { pipeline } = require('@xenova/transformers');
 const fetch = require('node-fetch'); 
-const openai = require('../config/openaiClient');
+
+// Initialize OpenAI client with better Docker environment support
+let openai = null;
+try {
+  // Re-import openai client to ensure it picks up environment variables
+  const openaiClient = require('../config/openaiClient');
+  openai = openaiClient;
+  
+  // Log OpenAI status for debugging
+  if (openai) {
+    console.log('✅ OpenAI client initialized successfully');
+  } else {
+    console.warn('⚠️ OpenAI client not available - API key may be missing');
+  }
+} catch (error) {
+  console.error('❌ Failed to initialize OpenAI client:', error.message);
+}
+
+// Helper function to parse JSON response from OpenAI
+const parseJSONResponse = (response) => {
+  try {
+    // First try to parse as-is
+    return JSON.parse(response);
+  } catch (error) {
+    // If that fails, try to extract JSON from markdown code blocks
+    try {
+      // Remove markdown code block markers
+      let cleaned = response.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+      
+      // Try to find JSON-like content between curly braces
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        return JSON.parse(jsonMatch[0]);
+      }
+      
+      // If no curly braces found, try to find array content
+      const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+      if (arrayMatch) {
+        return JSON.parse(arrayMatch[0]);
+      }
+      
+      // If all else fails, try to parse the cleaned string
+      return JSON.parse(cleaned);
+    } catch (parseError) {
+      console.error('Failed to parse JSON response:', response);
+      console.error('Parse error:', parseError);
+      throw new Error(`Invalid JSON response: ${response}`);
+    }
+  }
+};
 
 // Initialize Gemini API with proper error handling
 const initializeGeminiAI = () => {
@@ -101,7 +150,7 @@ ${text.substring(0, 3000)}
     const response = completion.choices[0].message.content.trim();
     console.log('Raw OpenAI response:', response);
 
-    const mcqs = JSON.parse(response);
+    const mcqs = parseJSONResponse(response);
     if (!Array.isArray(mcqs)) {
       throw new Error('Generated content is not a valid array');
     }
@@ -165,7 +214,7 @@ ${text.substring(0, 3000)}
     const response = completion.choices[0].message.content.trim();
     console.log('Raw OpenAI response:', response);
 
-    const cqs = JSON.parse(response);
+    const cqs = parseJSONResponse(response);
     if (!Array.isArray(cqs)) {
       throw new Error('Generated content is not a valid array');
     }
@@ -225,7 +274,7 @@ ${text.substring(0, 3000)}
     });
 
     const response = completion.choices[0].message.content.trim();
-    const parsedResponse = JSON.parse(response);
+    const parsedResponse = parseJSONResponse(response);
     
     if (!parsedResponse.notes || !Array.isArray(parsedResponse.notes)) {
       throw new Error('Generated content is not in the correct format');
