@@ -97,6 +97,17 @@ jobs:
           fi
           cd ..
           
+          # Update package-lock.json in frontend to ensure consistency
+          cd frontend
+          if [ -f package-lock.json ]; then
+            echo "🔄 Updating frontend package-lock.json for consistency..."
+            npm install --package-lock-only || echo "⚠️ Frontend package lock update failed, continuing..."
+          else
+            echo "📦 Generating frontend package-lock.json..."
+            npm install --package-lock-only || echo "⚠️ Frontend package lock generation failed, continuing..."
+          fi
+          cd ..
+          
           # Build and start services with better error handling
           echo "🔨 Building backend service..."
           if ! DOCKER_BUILDKIT=1 docker-compose build --no-cache backend; then
@@ -112,9 +123,14 @@ jobs:
           if ! DOCKER_BUILDKIT=1 docker-compose build --no-cache frontend; then
             echo "❌ Frontend build failed with Docker BuildKit. Trying without BuildKit..."
             if ! docker-compose build --no-cache frontend; then
-              echo "❌ Frontend build failed completely. Checking logs..."
-              docker-compose logs frontend --tail=50
-              exit 1
+              echo "❌ Frontend build failed completely. Trying to fix npm issues..."
+              # Try to fix npm issues within the build context
+              docker-compose run --rm frontend sh -c "npm cache clean --force && npm install --legacy-peer-deps" || true
+              if ! docker-compose build --no-cache frontend; then
+                echo "❌ Frontend build failed after npm fix. Checking logs..."
+                docker-compose logs frontend --tail=50
+                exit 1
+              fi
             fi
           fi
           
