@@ -45,7 +45,7 @@ export const FileList = ({
           {files.map((file) => (
             <TableRow
               key={file.id}
-              className="cursor-pointer hover:bg-gray-100"
+              className="hover:bg-gray-100"
             >
               <TableCell padding="checkbox">
                 <Checkbox
@@ -79,7 +79,7 @@ export const FileList = ({
                 {new Date(file.date_uploaded).toLocaleDateString()}
               </TableCell>
               <TableCell>
-                
+
                 {/* View File Button */}
                 <Tooltip title="View File">
                   <IconButton 
