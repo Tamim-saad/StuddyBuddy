@@ -1,48 +1,33 @@
-import React from "react";
-import { ToastContainer } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
+import {
+  Toast,
+  ToastClose,
+  ToastDescription,
+  ToastProvider,
+  ToastTitle,
+  ToastViewport,
+} from "./toast"
+import { useToast } from "../../hooks/use-toast"
 
-// Toaster component that provides toast functionality
-export const Toaster = ({
-  position = "bottom-right",
-  autoClose = 3000,
-  hideProgressBar = false,
-  newestOnTop = true,
-  closeOnClick = true,
-  rtl = false,
-  pauseOnFocusLoss = true,
-  draggable = true,
-  pauseOnHover = true,
-  theme = "light",
-  ...props
-}) => {
+export function Toaster() {
+  const { toasts } = useToast()
+
   return (
-    <ToastContainer
-      position={position}
-      autoClose={autoClose}
-      hideProgressBar={hideProgressBar}
-      newestOnTop={newestOnTop}
-      closeOnClick={closeOnClick}
-      rtl={rtl}
-      pauseOnFocusLoss={pauseOnFocusLoss}
-      draggable={draggable}
-      pauseOnHover={pauseOnHover}
-      theme={theme}
-      style={{
-        zIndex: 99999,
-        ...props.style,
-      }}
-      toastStyle={{
-        borderRadius: "8px",
-        border: "none",
-        boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-        fontSize: "14px",
-        fontWeight: "500",
-        ...props.toastStyle,
-      }}
-      {...props}
-    />
-  );
-};
-
-export default Toaster;
+    <ToastProvider>
+      {toasts.map(function ({ id, title, description, action, ...props }) {
+        return (
+          <Toast key={id} {...props}>
+            <div className="grid gap-1">
+              {title && <ToastTitle>{title}</ToastTitle>}
+              {description && (
+                <ToastDescription>{description}</ToastDescription>
+              )}
+            </div>
+            {action}
+            <ToastClose />
+          </Toast>
+        )
+      })}
+      <ToastViewport />
+    </ToastProvider>
+  )
+}

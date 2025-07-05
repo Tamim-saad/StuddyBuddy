@@ -1,4 +1,3 @@
-// src/components/PDFAnnotationViewer.jsx
 import React, { useState, useEffect, useRef } from "react";
 import {
   Stage,
@@ -21,9 +20,9 @@ import {
   TextCursor,
 } from "lucide-react";
 import { Button } from "./ui/button";
-import { annotationService } from "../services/annotationService";
-import { toast } from "./ui/toast";
 import { Toaster } from "./ui/toaster";
+import { annotationService } from "../services/annotationService";
+import { toast } from "../lib/toast";
 
 const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [viewerState, setViewerState] = useState("loading");

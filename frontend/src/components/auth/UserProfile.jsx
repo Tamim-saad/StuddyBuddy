@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { authServices } from "../../auth";
-import { toast } from "react-toastify";
+import { toast } from "../../lib/toast";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
 import { Card, CardContent } from "../ui/card";
 import { Avatar, AvatarFallback } from "../ui/avatar";
 import { Separator } from "../ui/separator";
-import { ToastContainer } from "react-toastify";
+import { Toaster } from "../ui/toaster";
 import { User, Lock, Mail, Loader2, Shield, Settings } from "lucide-react";
 import { appConfig } from "../../common/config";
 
@@ -350,7 +350,7 @@ export const UserProfile = () => {
           </div>
         </div>
       </div>
-      <ToastContainer />
+      <Toaster />
     </>
   );
 };
