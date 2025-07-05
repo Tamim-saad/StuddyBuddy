@@ -5,7 +5,7 @@ WORKDIR /app
 # Install curl for health checks
 RUN apk add --no-cache curl
 
-# Copy package files
+# Copy package files first (for better caching)
 COPY package*.json ./
 
 # Install dependencies
@@ -20,8 +20,8 @@ RUN mkdir -p uploads
 # Expose port
 EXPOSE 4000
 
-# Add healthcheck
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+# Optimized healthcheck
+HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=2 \
   CMD curl -f http://localhost:4000/ || exit 1
 
 # Start the application
