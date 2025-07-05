@@ -15,16 +15,15 @@ import {
   Image,
   Minus,
   MousePointer,
-  MousePointerClick,
   Pencil,
   Plus,
-  RotateCCW,
   RotateCw,
   TextCursor,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { annotationService } from "../services/annotationService";
-import { Draw } from "@mui/icons-material";
+import { toast } from "./ui/toast";
+import { Toaster } from "./ui/toaster";
 
 const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [viewerState, setViewerState] = useState("loading");
@@ -48,7 +47,6 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [highlightColor] = useState("#ffff0080");
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [savedAnnotations, setSavedAnnotations] = useState({}); // Store all pages annotations
-  const [saveStatus, setSaveStatus] = useState("idle"); // idle, saving, saved, error
 
   const pdfUrl = annotationService.getPDFUrl(filePath);
 
@@ -287,16 +285,19 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
     return {};
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
   // Save annotations to backend
   const saveAnnotations = async () => {
+    setIsSaving(true);
     if (!fileId) {
       setError("No file ID available for saving annotations");
+      toast.error("No file ID available for saving annotations");
       return;
     }
 
     try {
-      setSaveStatus("saving");
-
+      
       // First save current page annotations
       saveCurrentPageAnnotations();
 
@@ -333,22 +334,25 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
 
         // Update saved state
         setSavedAnnotations(allAnnotationsToSave);
-        setSaveStatus("saved");
         setError(""); // Clear any existing errors
 
-        // Show saved status for 2 seconds
-        setTimeout(() => setSaveStatus("idle"), 2000);
+        // Dismiss saving toast and show success
+        toast.success("Annotations saved successfully!", {
+          autoClose: 2000,
+        });
       } else {
         throw new Error(`Save failed: ${response.statusText}`);
       }
     } catch (error) {
       console.error("Failed to save annotations:", error);
       setError(`Failed to save annotations: ${error.message}`);
-      setSaveStatus("error");
-
-      // Reset status after 3 seconds
-      setTimeout(() => setSaveStatus("idle"), 3000);
+      
+      // Dismiss saving toast and show error
+      toast.error(`Failed to save annotations: ${error.message}`, {
+        autoClose: 5000,
+      });
     }
+    setIsSaving(false);
   };
 
   const renderPDFPage = async (
@@ -914,89 +918,12 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                   </Button>
                   <Button
                     onClick={saveAnnotations}
-                    disabled={saveStatus === "saving"}
-                    variant={saveStatus === "error" ? "destructive" : "default"}
                     size="sm"
-                    className={
-                      saveStatus === "saved"
-                        ? "bg-green-600 hover:bg-green-700"
-                        : ""
-                    }
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    disabled={isSaving}
                   >
-                    {saveStatus === "saving" ? (
-                      <span className="flex items-center">
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          xmlns="http://www.w3.org/2000/svg"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Saving...
-                      </span>
-                    ) : saveStatus === "saved" ? (
-                      <span className="flex items-center">
-                        <svg
-                          className="mr-1 h-4 w-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        Saved
-                      </span>
-                    ) : saveStatus === "error" ? (
-                      <span className="flex items-center">
-                        <svg
-                          className="mr-1 h-4 w-4"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        Retry
-                      </span>
-                    ) : (
-                      "💾 Save"
-                    )}
+                    {isSaving ? "Saving" : "Save"}
                   </Button>
-                  {/* Save Status Indicator */}
-                  {saveStatus !== "idle" && (
-                    <div
-                      className={`px-2 py-1 rounded text-xs font-medium ${
-                        saveStatus === "saving"
-                          ? "bg-blue-100 text-blue-800"
-                          : saveStatus === "saved"
-                          ? "bg-green-100 text-green-800"
-                          : "bg-red-100 text-red-800"
-                      }`}
-                    >
-                      {saveStatus === "saving" && "Saving annotations..."}
-                      {saveStatus === "saved" && "All changes saved"}
-                      {saveStatus === "error" && "Save failed"}
-                    </div>
-                  )}
                 </div>
               </div>
             </div>
@@ -1267,6 +1194,9 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">{renderContent()}</div>
+      
+      {/* Toast notifications */}
+      <Toaster />
     </div>
   );
 };
