@@ -16,7 +16,6 @@ export const FileView = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [indexingFiles, setIndexingFiles] = useState(new Set());
   const [generatedQuiz, setGeneratedQuiz] = useState(null);
 
   useEffect(() => {
@@ -38,8 +37,6 @@ export const FileView = () => {
 
   const handleStartIndexing = async (fileId, fileUrl) => {
     try {
-      setIndexingFiles(prev => new Set([...prev, fileId]));
-
       const fileToIndex = files.find(file => file.id === fileId);
       if (!fileToIndex) {
         throw new Error('File not found');
@@ -72,12 +69,6 @@ export const FileView = () => {
             : file
         )
       );
-    } finally {
-      setIndexingFiles(prev => {
-        const next = new Set(prev);
-        next.delete(fileId);
-        return next;
-      });
     }
   };
 
@@ -108,7 +99,10 @@ export const FileView = () => {
 
   const handleGenerateQuiz = async (type) => {
     const fileId = selectedFiles[0];
-    if (!fileId) return;
+    if (!fileId) {
+      alert('Please select a file first');
+      return;
+    }
 
     const accessToken = authServices.getAccessToken();
     const fileTitle = files.find(f => f.id === fileId)?.title || 'File';
@@ -135,12 +129,22 @@ export const FileView = () => {
       }
 
       const data = await response.json();
-      console.log('Quiz generated:', data.quiz);
+      console.log('Quiz generated:', data);
+      
+      // Store the quiz data with proper structure
+      const quizData = {
+        id: data.quiz.id,
+        title: data.quiz.title,
+        type: data.quiz.type,
+        questions: JSON.parse(data.quiz.questions),
+        file_id: data.quiz.file_id,
+        created_at: data.quiz.created_at
+      };
       
       if (type === 'mcq') {
-        navigate('/home/quiz/mcq-display', { state: { quiz: data.quiz } });
+        navigate('/home/quiz/mcq-display', { state: { quiz: quizData } });
       } else if (type === 'cq') {
-        navigate('/home/quiz/cq-display', { state: { quiz: data.quiz } });
+        navigate('/home/quiz/cq-display', { state: { quiz: quizData } });
       }
       
     } catch (error) {

@@ -15,8 +15,6 @@ export const FileLists = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [indexingFiles, setIndexingFiles] = useState(new Set());
-  const [generatedQuiz, setGeneratedQuiz] = useState(null);
 
   useEffect(() => {
     loadFiles();
@@ -37,8 +35,6 @@ export const FileLists = () => {
 
   const handleStartIndexing = async (fileId, fileUrl) => {
     try {
-      setIndexingFiles(prev => new Set([...prev, fileId]));
-
       const fileToIndex = files.find(file => file.id === fileId);
       if (!fileToIndex) {
         throw new Error('File not found');
@@ -71,12 +67,6 @@ export const FileLists = () => {
             : file
         )
       );
-    } finally {
-      setIndexingFiles(prev => {
-        const next = new Set(prev);
-        next.delete(fileId);
-        return next;
-      });
     }
   };
 
@@ -109,10 +99,12 @@ export const FileLists = () => {
 
   const handleGenerateStickynotes = async () => {
     const fileId = selectedFiles[0];
-    if (!fileId) return;
+    if (!fileId) {
+      alert('Please select a file first');
+      return;
+    }
 
     const accessToken = authServices.getAccessToken();
-    const fileTitle = files.find(f => f.id === fileId)?.title || 'File';
 
     try {
       setLoading(true);
@@ -135,10 +127,13 @@ export const FileLists = () => {
 
       const data = await response.json();
       console.log('Generated sticky notes:', data);
+      
+      // Navigate with properly structured data
       navigate('/home/stickynotes', { 
-        state: { stickynotes: data.stickynotes ,
-           file_id: data.file_id,
-           title: data.title 
+        state: { 
+          stickynotes: data.stickynotes,
+          file_id: data.file_id,
+          title: data.title 
         } 
       });
     } catch (error) {
@@ -151,70 +146,66 @@ export const FileLists = () => {
 
   return (
     <Box sx={{ p: 10, margin: 6 }}>
-      {!generatedQuiz ? (
+      <Typography variant="h5" sx={{ mb: 2, color: 'purple' }}>
+        Select File for Sticky Notes Generation
+      </Typography>
+      <Typography variant="body2" sx={{ mb: 3, color: 'gray' }}>
+        Choose a file to generate study notes from!
+      </Typography>
+
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
+        <SearchBar onSearch={handleSearch} />
+      </Box>
+
+      {loading ? (
+        <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
+          <CircularProgress size={40} sx={{ color: 'purple' }} />
+        </Box>
+      ) : (
         <>
-          <Typography variant="h5" sx={{ mb: 2, color: 'purple' }}>
-            Select File for Sticky Notes Generation
-          </Typography>
-          <Typography variant="body2" sx={{ mb: 3, color: 'gray' }}>
-            Choose a file to generate study notes from!
-          </Typography>
+          <FileList
+            files={filteredFiles.map(file => ({
+              ...file,
+              fileUrl: file.file_url?.replace(/^uploads\//, '')
+            }))}
+            selectedFiles={selectedFiles}
+            onSelectFile={(id) => {
+              setSelectedFiles(prev =>
+                prev.includes(id)
+                  ? prev.filter(fileId => fileId !== id)
+                  : [...prev, id]
+              );
+            }}
+            onStartIndexing={handleStartIndexing}
+          />
 
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
-            <SearchBar onSearch={handleSearch} />
+          {/* Generate Sticky Notes Button */}
+          <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+            <Button
+              onClick={handleGenerateStickynotes}
+              disabled={!selectedFiles.length || loading}
+              sx={{
+                bgcolor: '#22c55e',
+                color: 'white',
+                px: 4,
+                py: 1.5,
+                fontSize: '1rem',
+                fontWeight: 500,
+                '&:hover': {
+                  bgcolor: '#16a34a',
+                },
+                '&.Mui-disabled': {
+                  bgcolor: '#22c55e', // Changed from #d1d5db to keep it green
+                  opacity: 0.7, // Added opacity to show disabled state
+                  color: 'white'  // Changed from rgba(255,255,255,0.8) to keep text fully white
+                }
+              }}
+            >
+              {loading ? 'Generating...' : 'Generate Study Notes'}
+            </Button>
           </Box>
-
-          {loading ? (
-            <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
-              <CircularProgress size={40} sx={{ color: 'purple' }} />
-            </Box>
-          ) : (
-            <>
-              <FileList
-                files={filteredFiles.map(file => ({
-                  ...file,
-                  fileUrl: file.file_url?.replace(/^uploads\//, '')
-                }))}
-                selectedFiles={selectedFiles}
-                onSelectFile={(id) => {
-                  setSelectedFiles(prev =>
-                    prev.includes(id)
-                      ? prev.filter(fileId => fileId !== id)
-                      : [...prev, id]
-                  );
-                }}
-                onStartIndexing={handleStartIndexing}
-              />
-
-              {/* Generate Sticky Notes Button */}
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
-                <Button
-                  onClick={handleGenerateStickynotes}
-                  disabled={!selectedFiles.length || loading}
-                  sx={{
-                    bgcolor: '#22c55e',
-                    color: 'white',
-                    px: 4,
-                    py: 1.5,
-                    fontSize: '1rem',
-                    fontWeight: 500,
-                    '&:hover': {
-                      bgcolor: '#16a34a',
-                    },
-                    '&.Mui-disabled': {
-                      bgcolor: '#22c55e', // Changed from #d1d5db to keep it green
-                      opacity: 0.7, // Added opacity to show disabled state
-                      color: 'white'  // Changed from rgba(255,255,255,0.8) to keep text fully white
-                    }
-                  }}
-                >
-                  {loading ? 'Generating...' : 'Generate Study Notes'}
-                </Button>
-              </Box>
-            </>
-          )}
         </>
-      ) : null}
+      )}
     </Box>
   );
 };

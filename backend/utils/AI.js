@@ -69,6 +69,11 @@ const generateMCQs = async (text, options = {}) => {
       throw new Error('Invalid text input');
     }
 
+    // Check if OpenAI client is available
+    if (!openai) {
+      throw new Error('OpenAI client not configured. Please set OPENAI_API_KEY in environment variables.');
+    }
+
     const prompt = `
 Generate ${questionCount} multiple choice questions based on the following text.
 Each question should test understanding of key concepts.
@@ -88,7 +93,7 @@ ${text.substring(0, 3000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // or "gpt-3.5-turbo" if you're on the free plan
+      model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });
@@ -126,6 +131,11 @@ const generateCQs = async (text, options = {}) => {
       throw new Error('Invalid text input');
     }
 
+    // Check if OpenAI client is available
+    if (!openai) {
+      throw new Error('OpenAI client not configured. Please set OPENAI_API_KEY in environment variables.');
+    }
+
     const prompt = `
 Generate ${questionCount} creative questions based on the following text.
 Each question should test deep understanding of concepts.
@@ -147,7 +157,7 @@ ${text.substring(0, 3000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // or "gpt-3.5-turbo" for the free tier
+      model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });

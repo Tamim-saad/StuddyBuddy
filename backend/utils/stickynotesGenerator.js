@@ -12,6 +12,11 @@ const generateStickyNotes = async (text, options = {}) => {
       throw new Error('Invalid text input');
     }
 
+    // Check if OpenAI client is available
+    if (!openai) {
+      throw new Error('OpenAI client not configured. Please set OPENAI_API_KEY in environment variables.');
+    }
+
     const prompt = `
 Generate ${noteCount} flashcards/sticky notes based on the following text.
 Also suggest a concise but descriptive title for this set of notes (max 200 characters).
@@ -35,7 +40,7 @@ ${text.substring(0, 3000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "gpt-3.5-turbo",
       messages: [{ role: "user", content: prompt }],
       temperature: 0.7,
     });

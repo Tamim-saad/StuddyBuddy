@@ -141,19 +141,35 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
         // Import PDF.js
         const pdfjsLib = await import("pdfjs-dist");
 
-        // Set worker path
-        const workerPaths = [
-          "/pdf.worker.min.js",
-          "/pdf.worker.min.mjs",
-          "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js",
-        ];
+        // Set worker path - try different approaches for compatibility
+        try {
+          // Try to use the bundled worker first
+          const pdfjsWorker = await import("pdfjs-dist/build/pdf.worker.min.js");
+          pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker.default || pdfjsWorker;
+        } catch (workerImportError) {
+          console.warn("Failed to import worker module, trying alternative paths...");
+          
+          // Fallback to different worker paths
+          const workerPaths = [
+            "/pdf.worker.min.js",
+            "/pdf.worker.min.mjs",
+            `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js`,
+          ];
 
-        for (const workerPath of workerPaths) {
-          try {
-            pdfjsLib.GlobalWorkerOptions.workerSrc = workerPath;
-            break;
-          } catch (e) {
-            console.warn(`Failed to set worker path ${workerPath}:`, e);
+          let workerSet = false;
+          for (const workerPath of workerPaths) {
+            try {
+              pdfjsLib.GlobalWorkerOptions.workerSrc = workerPath;
+              workerSet = true;
+              console.log(`Successfully set worker path: ${workerPath}`);
+              break;
+            } catch (e) {
+              console.warn(`Failed to set worker path ${workerPath}:`, e);
+            }
+          }
+          
+          if (!workerSet) {
+            console.error("Failed to set any worker path, PDF rendering may not work");
           }
         }
 
