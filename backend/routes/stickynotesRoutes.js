@@ -101,6 +101,9 @@ router.post('/save', authenticateToken, async (req, res) => {
     // Insert notes to database
     const insertedNotes = [];
     for (const note of notes) {
+      // Ensure tags is an array and handle it properly for PostgreSQL
+      const tags = Array.isArray(note.tags) ? note.tags : [];
+      
       const result = await pool.query(
         `INSERT INTO stickynotes (
           file_id, 
@@ -112,7 +115,7 @@ router.post('/save', authenticateToken, async (req, res) => {
           created_at
         ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
         RETURNING *`,
-        [file_id, note.front, note.back, JSON.stringify(note.tags), note.importance, title]
+        [file_id, note.front, note.back, tags, note.importance, title]
       );
       insertedNotes.push(result.rows[0]);
     }
