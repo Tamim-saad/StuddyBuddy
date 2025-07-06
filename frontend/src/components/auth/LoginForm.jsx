@@ -12,6 +12,7 @@ import { authServices } from "../../auth";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import CircularProgress from '@mui/material/CircularProgress';
+import { toast } from "../../lib/toast";
 
 export const LoginForm = ({ onSuccess }) => {
   const navigate = useNavigate();
@@ -46,10 +47,6 @@ export const LoginForm = ({ onSuccess }) => {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
     if (error) setError('');
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
   };
 
   const validateForm = () => {
@@ -97,7 +94,7 @@ export const LoginForm = ({ onSuccess }) => {
       })
       .catch((err) => {
         setError(err.response?.data?.message || "Failed to login");
-        alert("Failed to login");
+        toast.error("Failed to login");
       })
       .finally(() => setLoading(false));
   };

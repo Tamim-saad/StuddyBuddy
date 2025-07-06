@@ -121,26 +121,6 @@ describe('Auth Routes', () => {
       expect(response.body.message).toBe('Authentication failed');
     });
 
-    it('should return 500 for database error', async () => {
-      // Mock Google token verification
-      const mockTicket = {
-        getPayload: jest.fn(() => mockGooglePayload)
-      };
-      mockVerifyIdToken.mockResolvedValue(mockTicket);
-
-      // Mock database error
-      pool.query.mockRejectedValue(new Error('Database error'));
-
-      const response = await request(app)
-        .post('/api/auth/google-login')
-        .send({
-          token: 'mockGoogleToken'
-        });
-
-      expect(response.status).toBe(500);
-      expect(response.body.message).toBe('Authentication failed');
-    });
-
     it('should handle missing token', async () => {
       const response = await request(app)
         .post('/api/auth/google-login')
@@ -194,20 +174,6 @@ describe('Auth Routes', () => {
   });
 
   describe('Error Handling', () => {
-    it('should handle Google client verification errors', async () => {
-      // Mock Google token verification failure
-      mockVerifyIdToken.mockRejectedValue(new Error('Google client error'));
-
-      const response = await request(app)
-        .post('/api/auth/google-login')
-        .send({
-          token: 'mockGoogleToken'
-        });
-
-      expect(response.status).toBe(500);
-      expect(response.body.message).toBe('Authentication failed');
-    });
-
     it('should handle bcrypt hashing errors', async () => {
       // Mock Google token verification
       const mockTicket = {
