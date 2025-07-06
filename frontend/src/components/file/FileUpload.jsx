@@ -331,7 +331,6 @@ export const FileUpload = () => {
             );
           }}
           onStartIndexing={handleStartIndexing}
-          onAnnotate={handleAnnotate}
           onViewFile={handleViewFile}
           onDeleteFile={handleDeleteFile} // Pass the delete handler
         />
