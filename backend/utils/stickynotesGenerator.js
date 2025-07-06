@@ -22,6 +22,9 @@ Generate ${noteCount} concise flashcards/sticky notes based on the following tex
 Also suggest a concise but descriptive title for this set of notes (max 100 characters).
 Each note should capture key concepts, definitions, or important points.
 
+IMPORTANT: Return ONLY a valid JSON object without any markdown formatting or code blocks.
+Do not wrap the response in triple backticks with json or any other formatting.
+
 Format your response as a valid JSON object in this exact structure:
 {
   "title": "A descriptive title for these notes",

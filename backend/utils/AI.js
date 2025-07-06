@@ -18,24 +18,27 @@ const parseJSONResponse = (response) => {
     
     // If that fails, try to extract JSON from markdown code blocks
     try {
-      // Remove markdown code block markers
+      // Remove markdown code block markers more thoroughly
       let cleaned = response.replace(/```json\s*/g, '').replace(/```\s*$/g, '');
+      
+      // Remove any trailing markdown or extra content after the JSON
+      cleaned = cleaned.replace(/```.*$/g, '');
       
       // Remove any leading/trailing whitespace
       cleaned = cleaned.trim();
       
-      // Try to find JSON-like content between curly braces (for objects)
-      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        console.log('Found JSON object, attempting to parse...');
-        return JSON.parse(jsonMatch[0]);
-      }
-      
-      // If no curly braces found, try to find array content
-      const arrayMatch = cleaned.match(/\[[\s\S]*\]/);
+      // Try to find JSON array content between square brackets
+      const arrayMatch = cleaned.match(/\[[\s\S]*?\]/);
       if (arrayMatch) {
         console.log('Found JSON array, attempting to parse...');
         return JSON.parse(arrayMatch[0]);
+      }
+      
+      // Try to find JSON object content between curly braces
+      const objectMatch = cleaned.match(/\{[\s\S]*?\}/);
+      if (objectMatch) {
+        console.log('Found JSON object, attempting to parse...');
+        return JSON.parse(objectMatch[0]);
       }
       
       // Remove any non-JSON text before the actual JSON
@@ -43,9 +46,30 @@ const parseJSONResponse = (response) => {
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
         if (line.startsWith('{') || line.startsWith('[')) {
-          const remainingText = lines.slice(i).join('\n');
+          // Find the end of the JSON by counting braces/brackets
+          let jsonEnd = i;
+          let braceCount = 0;
+          let bracketCount = 0;
+          
+          for (let j = i; j < lines.length; j++) {
+            const currentLine = lines[j];
+            for (let k = 0; k < currentLine.length; k++) {
+              if (currentLine[k] === '{') braceCount++;
+              if (currentLine[k] === '}') braceCount--;
+              if (currentLine[k] === '[') bracketCount++;
+              if (currentLine[k] === ']') bracketCount--;
+              
+              if (braceCount === 0 && bracketCount === 0 && (currentLine[k] === '}' || currentLine[k] === ']')) {
+                jsonEnd = j;
+                break;
+              }
+            }
+            if (braceCount === 0 && bracketCount === 0) break;
+          }
+          
+          const jsonText = lines.slice(i, jsonEnd + 1).join('\n');
           console.log('Found JSON starting line, attempting to parse...');
-          return JSON.parse(remainingText);
+          return JSON.parse(jsonText);
         }
       }
       
@@ -101,10 +125,15 @@ const generateMCQs = async (text, options = {}) => {
       throw new Error('Gemini client not configured. Please set GEMINI_API_KEY in environment variables.');
     }
 
+    console.log('Starting MCQ generation with Gemini...');
+    
     const prompt = `
 Generate ${questionCount} multiple choice questions based on the following text.
 Each question should test understanding of key concepts.
 Keep the questions concise and focused.
+
+IMPORTANT: Return ONLY a valid JSON array without any markdown formatting or code blocks.
+Do not wrap the response in triple backticks with json or any other formatting.
 
 Format your response as a valid JSON array in this exact structure:
 [
@@ -155,6 +184,12 @@ ${text.substring(0, 2000)}
     };
   } catch (error) {
     console.error('MCQ generation error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      geminiAvailable: !!gemini,
+      textLength: text?.length || 0
+    });
     throw error;
   }
 };
@@ -180,6 +215,9 @@ const generateCQs = async (text, options = {}) => {
 Generate ${questionCount} creative questions based on the following text.
 Each question should test deep understanding of concepts.
 Keep questions concise and focused.
+
+IMPORTANT: Return ONLY a valid JSON array without any markdown formatting or code blocks.
+Do not wrap the response in triple backticks with json or any other formatting.
 
 Format your response as a valid JSON array in this exact structure:
 [
@@ -235,6 +273,12 @@ ${text.substring(0, 2000)}
 
   } catch (error) {
     console.error('CQ generation error:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      geminiAvailable: !!gemini,
+      textLength: text?.length || 0
+    });
     throw error;
   }
 };
