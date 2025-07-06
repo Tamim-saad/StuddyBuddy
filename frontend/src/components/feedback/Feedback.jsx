@@ -4,7 +4,7 @@ import { Input } from "../ui/input";
 import { Button } from "../ui/button";
 import { Label } from "../ui/label";
 import { Textarea } from "../ui/textarea";
-import { useToast } from "../../hooks/use-toast";
+import { toast } from "../../lib/toast";
 
 export const Feedback = () => {
   const [formData, setFormData] = useState({
@@ -14,7 +14,6 @@ export const Feedback = () => {
     message: "",
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -38,11 +37,7 @@ export const Feedback = () => {
       });
 
       if (response.ok) {
-        toast({
-          title: "Message sent successfully!",
-          description: "Thank you for your feedback. We'll get back to you soon.",
-          variant: "default",
-        });
+        toast.success("✅ Message sent successfully! Thank you for your feedback. We'll get back to you soon.");
         setFormData({
           name: "",
           email: "",
@@ -53,11 +48,7 @@ export const Feedback = () => {
         throw new Error("Failed to send message");
       }
     } catch (error) {
-      toast({
-        title: "Error sending message",
-        description: "Please try again later or contact us directly.",
-        variant: "destructive",
-      });
+      toast.error("❌ Error sending message. Please try again later or contact us directly.");
     } finally {
       setIsSubmitting(false);
     }
