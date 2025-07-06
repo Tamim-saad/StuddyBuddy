@@ -143,7 +143,7 @@ jobs:
         echo "   ✅ Production Build: SUCCESSFUL"
         echo "   ✅ Code Coverage: Generated"
         echo ""
-        echo "🔍 TESTING FRAMEWORK DETAILS:"
+        echo "� TESTING FRAMEWORK DETAILS:"
         echo "   • Jest Framework: Industry-standard testing"
         echo "   • Unit Tests: Individual function testing"
         echo "   • Integration Tests: API endpoint testing"
@@ -153,149 +153,82 @@ jobs:
         echo "💡 All tests must pass before deployment proceeds"
         echo "🚀 Ready for production deployment..."
     
-    - name: 🚀 Deploy to Azure VM via SSH
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ env.VM_IP }}
-        username: azureuser
-        key: ${{ secrets.AZURE_VM_SSH_KEY }}
-        port: 22
-        command_timeout: 15m
-        script: |
-          echo "🚀 Starting deployment on Azure VM..."
-          
-          # Navigate to project directory or clone if doesn't exist
-          PROJECT_DIR="/home/azureuser/StuddyBuddy"
-          if [ -d "$PROJECT_DIR" ]; then
-            echo "📁 Project directory exists, updating..."
-            cd $PROJECT_DIR
-            git fetch origin
-            git reset --hard origin/main
-            git clean -fd
-          else
-            echo "📁 Cloning repository..."
-            git clone https://github.com/${{ github.repository }}.git $PROJECT_DIR
-            cd $PROJECT_DIR
-          fi
-          
-          # Create production environment file
-          echo "🔧 Creating environment configuration..."
-          cat > .env << EOF
-          NODE_ENV=production
-          PORT=4000
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          EMAIL_USER=${{ secrets.EMAIL_USER }}
-          EMAIL_PASS=${{ secrets.EMAIL_PASS }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
-          REACT_APP_BASE_URL=http://${{ env.VM_IP }}:4000
-          BACKEND_URL=http://${{ env.VM_IP }}:4000
-          FRONTEND_URL=http://${{ env.VM_IP }}
-          POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/postgres
-          QDRANT_URL=http://qdrant:6333
-          COMPOSE_PROJECT_NAME=studdybuddy
-          VM_PUBLIC_IP=${{ env.VM_IP }}
-          EOF
-          
-          # Docker deployment
-          echo "🐳 Starting Docker deployment..."
-          docker-compose down --remove-orphans || true
-          docker system prune -f || true
-          docker-compose build --no-cache
-          docker-compose up -d --remove-orphans
-          
-          # Wait for services
-          echo "⏳ Waiting for services to start..."
-          sleep 30
-          
-          # Health check
-          echo "🏥 Checking application health..."
-          BACKEND_READY=false
-          for i in {1..8}; do
-            if curl -f --max-time 5 http://localhost:4000/ >/dev/null 2>&1; then
-              echo "✅ Backend is healthy"
-              BACKEND_READY=true
-              break
-            else
-              echo "⏳ Waiting for backend... (attempt $i/8)"
-              sleep 5
-            fi
-          done
-          
-          if [ "$BACKEND_READY" = false ]; then
-            echo "❌ Backend health check failed"
-            docker-compose logs backend --tail=20
-            exit 1
-          fi
-          
-          echo "🎉 Deployment completed successfully!"
-          echo "📱 Application URLs:"
-          echo "   Frontend: http://${{ env.VM_IP }}"
-          echo "   Backend API: http://${{ env.VM_IP }}:4000"
-    
-    - name: 🔍 Post-Deployment Verification
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ env.VM_IP }}
-        username: azureuser
-        key: ${{ secrets.AZURE_VM_SSH_KEY }}
-        port: 22
-        script: |
-          echo "🔍 DEPLOYMENT VERIFICATION RESULTS"
-          echo "=================================="
-          
-          cd /home/azureuser/StuddyBuddy
-          
-          echo "📊 Container Status:"
-          docker-compose ps
-          
-          echo ""
-          echo "🌐 Service Health Checks:"
-          
-          # Backend API test
-          if curl -f --max-time 5 http://localhost:4000/ >/dev/null 2>&1; then
-            echo "✅ Backend API: HEALTHY"
-          else
-            echo "❌ Backend API: FAILED"
-          fi
-          
-          # Frontend test
-          if curl -f --max-time 5 http://localhost/ >/dev/null 2>&1; then
-            echo "✅ Frontend: HEALTHY"
-          else
-            echo "❌ Frontend: FAILED"
-          fi
-          
-          # Database test
-          if docker exec $(docker-compose ps -q postgres) pg_isready -U postgres >/dev/null 2>&1; then
-            echo "✅ Database: HEALTHY"
-          else
-            echo "❌ Database: FAILED"
-          fi
-          
-          echo ""
-          echo "🎯 DEPLOYMENT VERIFICATION COMPLETE"
-          echo "📱 Application accessible at: http://${{ env.VM_IP }}"
-    
-    - name: 📋 Final Deployment Summary
+    - name: Stop existing services
       run: |
+        echo "� Stopping existing services..."
+        docker-compose down --remove-orphans || true
+        
+    - name: Backup current deployment
+      run: |
+        echo "💾 Creating backup..."
+        timestamp=$(date +%Y%m%d_%H%M%S)
+        sudo mkdir -p /var/backups/studdybuddy
+        if [ -d "${{ env.PROJECT_DIR }}" ]; then
+          sudo cp -r ${{ env.PROJECT_DIR }} /var/backups/studdybuddy/backup_$timestamp
+        fi
+    
+    - name: Prepare deployment directories
+      run: |
+        echo "📁 Preparing deployment..."
+        sudo mkdir -p ${{ env.PROJECT_DIR }}
+        sudo chown -R $USER:$USER ${{ env.PROJECT_DIR }}
+        cp -r ./* ${{ env.PROJECT_DIR }}/
+    
+    - name: Create environment configuration
+      run: |
+        echo "🔧 Creating environment configuration..."
+        cd ${{ env.PROJECT_DIR }}
+        cat > .env << EOF
+        NODE_ENV=production
+        PORT=4000
+        JWT_SECRET=${{ secrets.JWT_SECRET }}
+        EMAIL_USER=${{ secrets.EMAIL_USER }}
+        EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+        GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+        REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
+        REACT_APP_BASE_URL=http://localhost:4000
+        POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/postgres
+        QDRANT_URL=http://qdrant:6333
+        COMPOSE_PROJECT_NAME=studdybuddy
+        EOF
+    
+    - name: Deploy with Docker Compose
+      run: |
+        echo "� Starting Docker deployment..."
+        cd ${{ env.PROJECT_DIR }}
+        docker system prune -f || true
+        docker-compose build --no-cache
+        docker-compose up -d --remove-orphans
+    
+    - name: Wait for services
+      run: |
+        echo "⏳ Waiting for services to start..."
+        sleep 30
+        docker-compose ps
+    
+    - name: Run Post-Deployment Verification
+      run: |
+        echo "🔍 Running post-deployment verification..."
+        echo "========================================"
+        echo "📋 This will verify:"
+        echo "   • Docker containers are running"
+        echo "   • Backend API endpoints respond correctly"
+        echo "   • Frontend serves content properly"
+        echo "   • Database connections are established"
+        echo "   • System resources are adequate"
         echo ""
-        echo "🎉 DEPLOYMENT SUMMARY FOR SUPERVISOR REVIEW"
-        echo "=========================================="
-        echo "✅ Jest Backend Tests: PASSED with detailed output"
-        echo "✅ React Frontend Tests: PASSED with detailed output"
-        echo "✅ Production Build: SUCCESSFUL"
-        echo "✅ Azure VM Deployment: COMPLETED"
-        echo "✅ Health Verification: PASSED"
+        cd ${{ env.PROJECT_DIR }}
+        ./scripts/post-deployment-verification.sh
         echo ""
+        echo "✅ Deployment verification completed"
+        echo "📱 Application ready for supervisor review"
+    
+    - name: Deployment Summary
+      run: |
+        echo "🎉 Deployment Summary:"
+        echo "✅ Pre-deployment tests passed"
+        echo "✅ Application deployed successfully"
+        echo "✅ Post-deployment verification passed"
         echo "📱 Application URLs:"
-        echo "   Frontend: http://${{ env.VM_IP }}"
-        echo "   Backend API: http://${{ env.VM_IP }}:4000"
-        echo ""
-        echo "🔍 Testing Evidence:"
-        echo "   • Comprehensive Jest test results shown above"
-        echo "   • Code coverage reports generated"
-        echo "   • All tests passed before deployment"
-        echo "   • Production deployment verified"
-        echo ""
-        echo "💡 Supervisor can review all test details in previous steps"
+        echo "   Frontend: http://localhost"
+        echo "   Backend API: http://localhost:4000"
