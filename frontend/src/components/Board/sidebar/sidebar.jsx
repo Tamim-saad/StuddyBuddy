@@ -61,11 +61,6 @@ const Sidebar = () => {
       route: "uploads",
     },
     {
-      text: "Chotha",
-      icon: <FolderIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
-      route: "chotha",
-    },
-    {
       text: "Quizz",
       icon: <QuizIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
       route: "quiz",
