@@ -70,8 +70,12 @@ router.post('/generate/mcq', authenticateToken, async (req, res) => {
       file_id
     });
 
+    // Debug logging
+    console.log('MCQ Data:', JSON.stringify(mcqData, null, 2));
+    console.log('Questions:', JSON.stringify(mcqData.questions, null, 2));
+
     // Return generated quiz without saving
-    res.json({
+    const response = {
       success: true,
       quiz: {
         file_id,
@@ -80,7 +84,10 @@ router.post('/generate/mcq', authenticateToken, async (req, res) => {
         priority,
         questions: mcqData.questions
       }
-    });
+    };
+    
+    console.log('Response to send:', JSON.stringify(response, null, 2));
+    res.json(response);
 
   } catch (error) {
     console.error('Quiz generation error:', error);
@@ -151,8 +158,12 @@ router.post('/generate/cq', authenticateToken, async (req, res) => {
       file_id
     });
 
+    // Debug logging
+    console.log('CQ Data:', JSON.stringify(cqData, null, 2));
+    console.log('Questions:', JSON.stringify(cqData.questions, null, 2));
+
     // Return generated quiz without saving
-    res.json({
+    const response = {
       success: true,
       quiz: {
         file_id,
@@ -161,7 +172,10 @@ router.post('/generate/cq', authenticateToken, async (req, res) => {
         priority,
         questions: cqData.questions
       }
-    });
+    };
+    
+    console.log('Response to send:', JSON.stringify(response, null, 2));
+    res.json(response);
 
   } catch (error) {
     console.error('Quiz generation error:', error);

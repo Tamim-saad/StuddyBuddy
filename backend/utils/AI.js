@@ -172,12 +172,29 @@ ${text.substring(0, 3000)}
     console.log('Raw OpenAI response:', response);
 
     const mcqs = parseJSONResponse(response);
+    console.log('Parsed MCQs:', JSON.stringify(mcqs, null, 2));
+    
     if (!Array.isArray(mcqs)) {
+      console.error('Generated content is not a valid array:', mcqs);
       throw new Error('Generated content is not a valid array');
     }
 
+    // Validate each MCQ has required fields
+    const validatedMCQs = mcqs.map((mcq, index) => {
+      if (!mcq.question || !mcq.options || !mcq.correctAnswer) {
+        console.error(`Invalid MCQ at index ${index}:`, mcq);
+        throw new Error(`Invalid MCQ structure at index ${index}`);
+      }
+      return {
+        question: String(mcq.question),
+        options: Array.isArray(mcq.options) ? mcq.options.map(opt => String(opt)) : [],
+        correctAnswer: String(mcq.correctAnswer),
+        explanation: String(mcq.explanation || '')
+      };
+    });
+
     return {
-      questions: mcqs,
+      questions: validatedMCQs,
       file_id,
       title,
       priority,
@@ -236,12 +253,31 @@ ${text.substring(0, 3000)}
     console.log('Raw OpenAI response:', response);
 
     const cqs = parseJSONResponse(response);
+    console.log('Parsed CQs:', JSON.stringify(cqs, null, 2));
+    
     if (!Array.isArray(cqs)) {
+      console.error('Generated content is not a valid array:', cqs);
       throw new Error('Generated content is not a valid array');
     }
 
+    // Validate each CQ has required fields
+    const validatedCQs = cqs.map((cq, index) => {
+      if (!cq.question || !cq.modelAnswer) {
+        console.error(`Invalid CQ at index ${index}:`, cq);
+        throw new Error(`Invalid CQ structure at index ${index}`);
+      }
+      return {
+        question: String(cq.question),
+        modelAnswer: String(cq.modelAnswer),
+        rubric: {
+          keyPoints: Array.isArray(cq.rubric?.keyPoints) ? cq.rubric.keyPoints.map(kp => String(kp)) : [],
+          maxScore: Number(cq.rubric?.maxScore) || 10
+        }
+      };
+    });
+
     return {
-      questions: cqs,
+      questions: validatedCQs,
       file_id,
       title,
       priority,

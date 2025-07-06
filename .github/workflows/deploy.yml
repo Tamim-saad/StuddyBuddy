@@ -152,7 +152,7 @@ jobs:
           echo "🔍 Checking backend health..."
           BACKEND_READY=false
           for i in {1..8}; do
-            if curl -f --max-time 5 http://localhost:4000/ >/dev/null 2>&1; then
+            if curl -f --max-time 5 http://localhost:4000/api/health >/dev/null 2>&1; then
               echo "✅ Backend is healthy"
               BACKEND_READY=true
               break

@@ -27,7 +27,7 @@ EXPOSE 4000
 
 # Optimized healthcheck
 HEALTHCHECK --interval=15s --timeout=3s --start-period=5s --retries=2 \
-  CMD curl -f http://localhost:4000/ || exit 1
+  CMD curl -f http://localhost:4000/api/health || exit 1
 
 # Start the application
 CMD ["npm", "run", "start"]

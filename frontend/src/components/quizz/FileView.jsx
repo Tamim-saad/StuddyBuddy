@@ -136,7 +136,7 @@ export const FileView = () => {
         id: data.quiz.id,
         title: data.quiz.title,
         type: data.quiz.type,
-        questions: JSON.parse(data.quiz.questions),
+        questions: data.quiz.questions,
         file_id: data.quiz.file_id,
         created_at: data.quiz.created_at
       };
