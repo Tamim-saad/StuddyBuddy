@@ -106,7 +106,7 @@ const Sidebar = () => {
     {
       text: "Feedback",
       icon: <FilePenLine size={24} color="#fffbeb" />, // Changed to FilePenLine for feedback
-      route: "profile",
+      route: "feedback",
     },
     {
       text: "My Profile",
