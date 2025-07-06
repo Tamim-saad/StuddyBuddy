@@ -127,7 +127,7 @@ const generateEmbeddings = async (text) => {
 // Function to generate MCQ questions using Gemini with retries
 const generateMCQs = async (text, options = {}) => {
   const {
-    questionCount = 5,
+    questionCount = 1,
     title = 'Untitled Quiz',
     priority = 0,
     file_id,
@@ -207,7 +207,7 @@ ${text.substring(0, 3000)}
 };
 const generateCQs = async (text, options = {}) => {
   const {
-    questionCount = 5,
+    questionCount = 1,
     title = 'Untitled Quiz',
     priority = 0,
     file_id,
@@ -292,7 +292,7 @@ ${text.substring(0, 3000)}
 
 const generateStickyNotes = async (text, options = {}) => {
   const {
-    noteCount = 5,
+    noteCount = 1,
     title = 'Untitled Notes',
     file_id,
   } = options;
