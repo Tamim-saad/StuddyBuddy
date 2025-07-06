@@ -7,9 +7,9 @@ try {
   if (process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY !== 'dummy' && process.env.GEMINI_API_KEY !== 'test-key') {
     const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
     
-    // Use Gemini Pro for reliability
+    // Use Gemini 1.5 Flash model (correct model name for current API)
     gemini = genAI.getGenerativeModel({ 
-      model: "gemini-pro",
+      model: "models/gemini-1.5-flash",
       generationConfig: {
         temperature: 0.5,
         maxOutputTokens: 1024,
