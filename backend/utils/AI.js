@@ -3,26 +3,12 @@ require('dotenv').config();
 const { pipeline } = require('@xenova/transformers');
 const fetch = require('node-fetch'); 
 
-// Initialize OpenAI client with better Docker environment support
-let openai = null;
-try {
-  // Re-import openai client to ensure it picks up environment variables
-  const openaiClient = require('../config/openaiClient');
-  openai = openaiClient;
-  
-  // Log OpenAI status for debugging
-  if (openai) {
-    console.log('✅ OpenAI client initialized successfully');
-  } else {
-    console.warn('⚠️ OpenAI client not available - API key may be missing');
-  }
-} catch (error) {
-  console.error('❌ Failed to initialize OpenAI client:', error.message);
-}
+// Initialize Gemini client instead of OpenAI
+const gemini = require('../config/geminiClient');
 
-// Helper function to parse JSON response from OpenAI
+// Helper function to parse JSON response from Gemini
 const parseJSONResponse = (response) => {
-  console.log('Attempting to parse OpenAI response:', response);
+  console.log('Attempting to parse Gemini response:', response);
   
   try {
     // First try to parse as-is
@@ -75,34 +61,6 @@ const parseJSONResponse = (response) => {
 };
 
 // Initialize Gemini API with proper error handling
-const initializeGeminiAI = () => {
-  if (!process.env.GEMINI_API_KEY) {
-    throw new Error('GEMINI_API_KEY not found in environment variables');
-  }
-  return new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-};
-
-// Create model instance with retry mechanism
-const createModel = () => {
-  try {
-    const genAI = initializeGeminiAI();
-    return genAI.getGenerativeModel({ 
-      model: "gemini-pro",
-      safety_settings: [
-        {
-          category: "HARM_CATEGORY_HARASSMENT",
-          threshold: "BLOCK_MEDIUM_AND_ABOVE"
-        }
-      ]
-    });
-  } catch (error) {
-    console.error('Failed to initialize Gemini model:', error);
-    throw error;
-  }
-};
-
-const model = createModel();
-
 // Initialize embedding model
 let embedder = null;
 const initializeEmbedder = async () => {
@@ -124,7 +82,7 @@ const generateEmbeddings = async (text) => {
   }
 };
 
-// Function to generate MCQ questions using OpenAI with reduced costs
+// Function to generate MCQ questions using Gemini with reduced costs
 const generateMCQs = async (text, options = {}) => {
   const {
     questionCount = 3, // Reduced from 5 to 3 for cost efficiency
@@ -139,9 +97,9 @@ const generateMCQs = async (text, options = {}) => {
       throw new Error('Invalid text input');
     }
 
-    // Check if OpenAI client is available
-    if (!openai) {
-      throw new Error('OpenAI client not configured. Please set OPENAI_API_KEY in environment variables.');
+    // Check if Gemini client is available
+    if (!gemini) {
+      throw new Error('Gemini client not configured. Please set GEMINI_API_KEY in environment variables.');
     }
 
     const prompt = `
@@ -163,15 +121,9 @@ Text to generate questions from:
 ${text.substring(0, 2000)}
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // Using standard version
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.5, // Reduced temperature for more consistent results
-      max_tokens: 800, // Limit tokens to control costs
-    });
-
-    const response = completion.choices[0].message.content.trim();
-    console.log('Raw OpenAI response:', response);
+    const result = await gemini.generateContent(prompt);
+    const response = result.response.text().trim();
+    console.log('Raw Gemini response:', response);
 
     const mcqs = parseJSONResponse(response);
     console.log('Parsed MCQs:', JSON.stringify(mcqs, null, 2));
@@ -220,9 +172,9 @@ const generateCQs = async (text, options = {}) => {
       throw new Error('Invalid text input');
     }
 
-    // Check if OpenAI client is available
-    if (!openai) {
-      throw new Error('OpenAI client not configured. Please set OPENAI_API_KEY in environment variables.');
+    // Check if Gemini client is available
+    if (!gemini) {
+      throw new Error('Gemini client not configured. Please set GEMINI_API_KEY in environment variables.');
     }
 
     const prompt = `
@@ -246,15 +198,9 @@ Text to generate questions from:
 ${text.substring(0, 2000)}
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // Using standard version
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.5, // Reduced temperature for more consistent results
-      max_tokens: 600, // Limit tokens to control costs
-    });
-
-    const response = completion.choices[0].message.content.trim();
-    console.log('Raw OpenAI response:', response);
+    const result = await gemini.generateContent(prompt);
+    const response = result.response.text().trim();
+    console.log('Raw Gemini response:', response);
 
     const cqs = parseJSONResponse(response);
     console.log('Parsed CQs:', JSON.stringify(cqs, null, 2));
@@ -328,13 +274,8 @@ Text to generate notes from:
 ${text.substring(0, 3000)}
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-    });
-
-    const response = completion.choices[0].message.content.trim();
+    const result = await gemini.generateContent(prompt);
+    const response = result.response.text().trim();
     const parsedResponse = parseJSONResponse(response);
     
     if (!parsedResponse.notes || !Array.isArray(parsedResponse.notes)) {

@@ -4,7 +4,7 @@ const { authenticateToken } = require('../middleware/authMiddleware');
 const { generateMCQs, generateCQs } = require('../utils/AI');
 const { client } = require('../utils/qdrantClient');
 const { Pool } = require('pg');
-const openai = require('../config/openaiClient');
+const gemini = require('../config/geminiClient');
 
 const pool = new Pool({
   connectionString: process.env.POSTGRES_URI
@@ -345,13 +345,9 @@ router.post('/evaluate', async (req, res) => {
     Return only the numeric score.
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.3,
-    });
-
-    const score = parseInt(completion.choices[0].message.content.trim());
+    const result = await gemini.generateContent(prompt);
+    const response = result.response.text().trim();
+    const score = parseInt(response);
     
     res.json({ score });
   } catch (error) {

@@ -1,4 +1,4 @@
-const openai = require('../config/openaiClient');
+const gemini = require('../config/geminiClient');
 
 const generateStickyNotes = async (text, options = {}) => {
   const {
@@ -12,9 +12,9 @@ const generateStickyNotes = async (text, options = {}) => {
       throw new Error('Invalid text input');
     }
 
-    // Check if OpenAI client is available
-    if (!openai) {
-      throw new Error('OpenAI client not configured. Please set OPENAI_API_KEY in environment variables.');
+    // Check if Gemini client is available
+    if (!gemini) {
+      throw new Error('Gemini client not configured. Please set GEMINI_API_KEY in environment variables.');
     }
 
     const prompt = `
@@ -39,14 +39,8 @@ Text to generate notes from:
 ${text.substring(0, 2000)}
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo", // Using standard version
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.5, // Reduced temperature for more consistent results
-      max_tokens: 500, // Limit tokens to control costs
-    });
-
-    const response = completion.choices[0].message.content.trim();
+    const result = await gemini.generateContent(prompt);
+    const response = result.response.text().trim();
     const parsedResponse = JSON.parse(response);
     
     if (!parsedResponse.notes || !Array.isArray(parsedResponse.notes)) {
