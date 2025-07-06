@@ -6,202 +6,104 @@ on:
   workflow_dispatch:
 
 env:
-  NODE_VERSION: '20'
-  VM_IP: ${{ secrets.AZURE_VM_IP }}
-  PROJECT_DIR: '/home/azureuser/StuddyBuddy'
+  NODE_VERSION: '18'
+  PROJECT_DIR: '/opt/studdybuddy'
 
 jobs:
   deploy:
     name: Deploy to Azure VM
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     if: github.ref == 'refs/heads/main'
+    
+    env:
+      NODE_ENV: production
+      REACT_APP_BASE_URL: ${{ secrets.REACT_APP_BASE_URL }}
+      REACT_APP_GOOGLE_CLIENT_ID: ${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      EMAIL_USER: ${{ secrets.EMAIL_USER }}
+      EMAIL_PASS: ${{ secrets.EMAIL_PASS }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+      POSTGRES_URI: ${{ secrets.POSTGRES_URI }}
+      QDRANT_URL: ${{ secrets.QDRANT_URL }}
+      QDRANT_API_KEY: ${{ secrets.QDRANT_API_KEY }}
     
     steps:
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
-    - name: Deploy to Azure VM
-      uses: appleboy/ssh-action@v0.1.10
-      with:
-        host: ${{ secrets.VM_HOST }}
-        username: ${{ secrets.VM_USER }}
-        key: ${{ secrets.VM_SSH_KEY }}
-        port: 22
-        command_timeout: 15m
-        script: |
-          echo "🚀 Starting optimized deployment to Azure VM..."
-          
-          # Set error handling
-          set -e
-          
-          # Navigate to project directory or clone if doesn't exist
-          if [ -d "${{ env.PROJECT_DIR }}" ]; then
-            echo "📁 Project directory exists, updating..."
-            cd ${{ env.PROJECT_DIR }}
-            git fetch origin
-            git reset --hard origin/main
-            git clean -fd
-          else
-            echo "📁 Cloning repository..."
-            git clone https://github.com/${{ github.repository }}.git ${{ env.PROJECT_DIR }}
-            cd ${{ env.PROJECT_DIR }}
-          fi
-          
-          # Create production environment file
-          echo "🔧 Creating environment configuration..."
-          cat > .env << EOF
-          # Production Environment Variables
-          NODE_ENV=production
-          PORT=4000
-          JWT_SECRET=${{ secrets.JWT_SECRET }}
-          EMAIL_USER=${{ secrets.EMAIL_USER }}
-          EMAIL_PASS=${{ secrets.EMAIL_PASS }}
-          GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
-          REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
-          
-          # Azure VM URLs
-          REACT_APP_BASE_URL=http://${{ env.VM_IP }}:4000
-          BACKEND_URL=http://${{ env.VM_IP }}:4000
-          FRONTEND_URL=http://${{ env.VM_IP }}
-          
-          # Database Configuration
-          POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/postgres
-          
-          # Vector Database Configuration
-          QDRANT_URL=http://qdrant:6333
-          
-          # Docker Configuration
-          COMPOSE_PROJECT_NAME=studdybuddy
-          VM_PUBLIC_IP=${{ env.VM_IP }}
-          VM_PRIVATE_IP=10.1.0.4
-          EOF
-          
-          # Optimized Docker deployment
-          echo "🔨 Starting optimized Docker deployment..."
-          
-          # Stop existing containers first
-          docker-compose down --remove-orphans || true
-          
-          # Clean up Docker system to free space
-          docker system prune -f || true
-          
-          # Update package-lock.json in backend to ensure consistency
-          cd backend
-          if [ -f package-lock.json ]; then
-            echo "🔄 Updating package-lock.json for consistency..."
-            npm install --package-lock-only || echo "⚠️ Package lock update failed, continuing..."
-          else
-            echo "📦 Generating package-lock.json..."
-            npm install --package-lock-only || echo "⚠️ Package lock generation failed, continuing..."
-          fi
-          cd ..
-          
-          # Update package-lock.json in frontend to ensure consistency
-          cd frontend
-          if [ -f package-lock.json ]; then
-            echo "🔄 Updating frontend package-lock.json for consistency..."
-            npm install --package-lock-only || echo "⚠️ Frontend package lock update failed, continuing..."
-          else
-            echo "📦 Generating frontend package-lock.json..."
-            npm install --package-lock-only || echo "⚠️ Frontend package lock generation failed, continuing..."
-          fi
-          cd ..
-          
-          # Build and start services with better error handling
-          echo "🔨 Building backend service..."
-          if ! DOCKER_BUILDKIT=1 docker-compose build --no-cache backend; then
-            echo "❌ Backend build failed with Docker BuildKit. Trying without BuildKit..."
-            if ! docker-compose build --no-cache backend; then
-              echo "❌ Backend build failed completely. Checking logs..."
-              docker-compose logs backend --tail=50
-              exit 1
-            fi
-          fi
-          
-          echo "🔨 Building frontend service..."
-          if ! DOCKER_BUILDKIT=1 docker-compose build --no-cache frontend; then
-            echo "❌ Frontend build failed with Docker BuildKit. Trying without BuildKit..."
-            if ! docker-compose build --no-cache frontend; then
-              echo "❌ Frontend build failed completely. Trying to fix npm issues..."
-              # Try to fix npm issues within the build context
-              docker-compose run --rm frontend sh -c "npm cache clean --force && npm install --legacy-peer-deps" || true
-              if ! docker-compose build --no-cache frontend; then
-                echo "❌ Frontend build failed after npm fix. Checking logs..."
-                docker-compose logs frontend --tail=50
-                exit 1
-              fi
-            fi
-          fi
-          
-          echo "🚀 Starting all services..."
-          docker-compose up -d --remove-orphans
-          
-          # Quick health check with reduced wait time
-          echo "🏥 Performing quick health checks..."
-          
-          # Show running containers for debugging
-          echo "📊 Current container status:"
-          docker-compose ps
-          
-          # Wait for services to be ready (reduced from 30s to 15s)
-          echo "⏳ Waiting for services to start..."
-          sleep 15
-          
-          # Check backend health with fewer retries
-          echo "🔍 Checking backend health..."
-          BACKEND_READY=false
-          for i in {1..8}; do
-            if curl -f --max-time 5 http://localhost:4000/api/health >/dev/null 2>&1; then
-              echo "✅ Backend is healthy"
-              BACKEND_READY=true
-              break
-            else
-              echo "⏳ Waiting for backend... (attempt $i/8)"
-              sleep 5
-            fi
-          done
-          
-          if [ "$BACKEND_READY" = false ]; then
-            echo "❌ Backend health check failed. Showing logs and container status..."
-            echo "📊 Container status:"
-            docker-compose ps
-            echo "📋 Backend logs:"
-            docker-compose logs backend --tail=30
-            echo "📋 Postgres logs:"
-            docker-compose logs postgres --tail=10
-            echo "📋 Qdrant logs:"
-            docker-compose logs qdrant --tail=10
-            exit 1
-          fi
-          
-          # Check frontend health with fewer retries
-          echo "🔍 Checking frontend health..."
-          FRONTEND_READY=false
-          for i in {1..5}; do
-            if curl -f --max-time 5 http://localhost/ >/dev/null 2>&1; then
-              echo "✅ Frontend is healthy"
-              FRONTEND_READY=true
-              break
-            else
-              echo "⏳ Waiting for frontend... (attempt $i/5)"
-              sleep 5
-            fi
-          done
-          
-          if [ "$FRONTEND_READY" = false ]; then
-            echo "⚠️ Frontend health check failed, but continuing deployment"
-          fi
-          
-          echo "🎉 Deployment completed successfully!"
-          echo "📱 Application URLs:"
-          echo "   Frontend: http://${{ env.VM_IP }}"
-          echo "   Backend API: http://${{ env.VM_IP }}:4000"
+    - name: Make scripts executable
+      run: chmod +x scripts/*.sh
     
-    - name: Notify deployment status
-      if: always()
+    - name: Run Pre-Deployment Tests
       run: |
-        if [ "${{ job.status }}" == "success" ]; then
-          echo "✅ Deployment successful!"
-        else
-          echo "❌ Deployment failed!"
+        echo "🧪 Running comprehensive pre-deployment tests..."
+        ./scripts/pre-deployment-tests.sh
+    
+    - name: Stop existing services
+      run: |
+        echo "� Stopping existing services..."
+        docker-compose down --remove-orphans || true
+        
+    - name: Backup current deployment
+      run: |
+        echo "💾 Creating backup..."
+        timestamp=$(date +%Y%m%d_%H%M%S)
+        sudo mkdir -p /var/backups/studdybuddy
+        if [ -d "${{ env.PROJECT_DIR }}" ]; then
+          sudo cp -r ${{ env.PROJECT_DIR }} /var/backups/studdybuddy/backup_$timestamp
         fi
+    
+    - name: Prepare deployment directories
+      run: |
+        echo "📁 Preparing deployment..."
+        sudo mkdir -p ${{ env.PROJECT_DIR }}
+        sudo chown -R $USER:$USER ${{ env.PROJECT_DIR }}
+        cp -r ./* ${{ env.PROJECT_DIR }}/
+    
+    - name: Create environment configuration
+      run: |
+        echo "🔧 Creating environment configuration..."
+        cd ${{ env.PROJECT_DIR }}
+        cat > .env << EOF
+        NODE_ENV=production
+        PORT=4000
+        JWT_SECRET=${{ secrets.JWT_SECRET }}
+        EMAIL_USER=${{ secrets.EMAIL_USER }}
+        EMAIL_PASS=${{ secrets.EMAIL_PASS }}
+        GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}
+        REACT_APP_GOOGLE_CLIENT_ID=${{ secrets.REACT_APP_GOOGLE_CLIENT_ID }}
+        REACT_APP_BASE_URL=http://localhost:4000
+        POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/postgres
+        QDRANT_URL=http://qdrant:6333
+        COMPOSE_PROJECT_NAME=studdybuddy
+        EOF
+    
+    - name: Deploy with Docker Compose
+      run: |
+        echo "� Starting Docker deployment..."
+        cd ${{ env.PROJECT_DIR }}
+        docker system prune -f || true
+        docker-compose build --no-cache
+        docker-compose up -d --remove-orphans
+    
+    - name: Wait for services
+      run: |
+        echo "⏳ Waiting for services to start..."
+        sleep 30
+        docker-compose ps
+    
+    - name: Run Post-Deployment Verification
+      run: |
+        echo "🔍 Running post-deployment verification..."
+        cd ${{ env.PROJECT_DIR }}
+        ./scripts/post-deployment-verification.sh
+    
+    - name: Deployment Summary
+      run: |
+        echo "🎉 Deployment Summary:"
+        echo "✅ Pre-deployment tests passed"
+        echo "✅ Application deployed successfully"
+        echo "✅ Post-deployment verification passed"
+        echo "📱 Application URLs:"
+        echo "   Frontend: http://localhost"
+        echo "   Backend API: http://localhost:4000"
