@@ -13,11 +13,6 @@ const pool = new Pool({
 // Generate MCQ quiz from a file
 router.post('/generate/mcq', authenticateToken, async (req, res) => {
   try {
-    // Validate API key
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('Gemini API key not configured');
-    }
-
     let { file_id, questionCount = 3, title = 'Untitled Quiz', priority = 0 } = req.body;
     
     // Validate input
@@ -128,11 +123,6 @@ router.post('/generate/mcq', authenticateToken, async (req, res) => {
 // Generate CQ quiz from a file
 router.post('/generate/cq', authenticateToken, async (req, res) => {
   try {
-    // Validate API key
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('Gemini API key not configured');
-    }
-
     let { file_id, questionCount = 2, title = 'Untitled Quiz', priority = 0 } = req.body;
     
     // Validate input

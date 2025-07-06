@@ -60,7 +60,6 @@ const parseJSONResponse = (response) => {
   }
 };
 
-// Initialize Gemini API with proper error handling
 // Initialize embedding model
 let embedder = null;
 const initializeEmbedder = async () => {
@@ -295,7 +294,6 @@ ${text.substring(0, 3000)}
 };
 
 module.exports = {
-  model,
   generateEmbeddings,
   generateMCQs,
   generateCQs,
