@@ -164,6 +164,7 @@ export const StickynotesDisplay = () => {
             opacity: isSaving || saved ? 0.8 : 1  // optional effect
           }}
         >
+          {isSaving ? 'Saving...' : saved ? 'Saved' : 'Save Notes'}
         </Button>
       </Box>
 

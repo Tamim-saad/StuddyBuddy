@@ -40,7 +40,7 @@ ${text.substring(0, 2000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo-mini", // Using mini version for cost efficiency
+      model: "gpt-3.5-turbo", // Using standard version
       messages: [{ role: "user", content: prompt }],
       temperature: 0.5, // Reduced temperature for more consistent results
       max_tokens: 500, // Limit tokens to control costs
