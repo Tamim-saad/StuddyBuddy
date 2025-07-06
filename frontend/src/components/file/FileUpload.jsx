@@ -222,6 +222,20 @@ export const FileUpload = () => {
     }
   };
 
+  // File deletion handler
+  const handleDeleteFile = async (fileId) => {
+    try {
+      await uploadService.deleteFile(fileId);
+      // Remove the file from the local state
+      setFiles(prevFiles => prevFiles.filter(file => file.id !== fileId));
+      setSelectedFiles(prevSelected => prevSelected.filter(id => id !== fileId));
+      console.log('File deleted successfully:', fileId);
+    } catch (error) {
+      console.error('Failed to delete file:', error);
+      // You could add a toast notification here for better UX
+    }
+  };
+
   // If annotating, show the annotation viewer instead of PDFAnnotator
   if (annotatingFile) {
     return (
@@ -319,6 +333,7 @@ export const FileUpload = () => {
           onStartIndexing={handleStartIndexing}
           onAnnotate={handleAnnotate}
           onViewFile={handleViewFile}
+          onDeleteFile={handleDeleteFile} // Pass the delete handler
         />
       )}
     </Box>

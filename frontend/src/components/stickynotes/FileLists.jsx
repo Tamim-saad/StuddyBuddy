@@ -144,6 +144,19 @@ export const FileLists = () => {
     }
   };
 
+  // File deletion handler
+  const handleDeleteFile = async (fileId) => {
+    try {
+      await uploadService.deleteFile(fileId);
+      // Remove the file from the local state
+      setFiles(prevFiles => prevFiles.filter(file => file.id !== fileId));
+      setSelectedFiles(prevSelected => prevSelected.filter(id => id !== fileId));
+      console.log('File deleted successfully:', fileId);
+    } catch (error) {
+      console.error('Failed to delete file:', error);
+    }
+  };
+
   return (
     <Box sx={{ p: 10, margin: 6 }}>
       <Typography variant="h5" sx={{ mb: 2, color: 'purple' }}>
@@ -177,6 +190,7 @@ export const FileLists = () => {
               );
             }}
             onStartIndexing={handleStartIndexing}
+            onDeleteFile={handleDeleteFile} // Pass the delete handler to FileList
           />
 
           {/* Generate Sticky Notes Button */}

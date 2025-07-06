@@ -82,33 +82,6 @@ router.post('/generate/mcq', authenticateToken, async (req, res) => {
     };
     
     console.log('Response to send:', JSON.stringify(response, null, 2));
-    
-    // Save the generated quiz to database for future access
-    try {
-      const insertQuizQuery = `
-        INSERT INTO quiz (file_id, title, type, questions, priority) 
-        VALUES ($1, $2, $3, $4, $5) 
-        RETURNING id, created_at
-      `;
-      
-      const savedQuizResult = await pool.query(insertQuizQuery, [
-        file_id,
-        title,
-        'mcq',
-        JSON.stringify(mcqData.questions),
-        priority
-      ]);
-
-      // Add the database ID to the response
-      response.quiz.id = savedQuizResult.rows[0].id;
-      response.quiz.created_at = savedQuizResult.rows[0].created_at;
-      
-      console.log('MCQ Quiz saved to database with ID:', savedQuizResult.rows[0].id);
-    } catch (saveError) {
-      console.error('Error saving MCQ quiz to database:', saveError);
-      // Continue with response even if saving fails
-    }
-    
     res.json(response);
 
   } catch (error) {
@@ -192,33 +165,6 @@ router.post('/generate/cq', authenticateToken, async (req, res) => {
     };
     
     console.log('Response to send:', JSON.stringify(response, null, 2));
-    
-    // Save the generated quiz to database for future access
-    try {
-      const insertQuizQuery = `
-        INSERT INTO quiz (file_id, title, type, questions, priority) 
-        VALUES ($1, $2, $3, $4, $5) 
-        RETURNING id, created_at
-      `;
-      
-      const savedQuizResult = await pool.query(insertQuizQuery, [
-        file_id,
-        title,
-        'cq',
-        JSON.stringify(cqData.questions),
-        priority
-      ]);
-
-      // Add the database ID to the response
-      response.quiz.id = savedQuizResult.rows[0].id;
-      response.quiz.created_at = savedQuizResult.rows[0].created_at;
-      
-      console.log('CQ Quiz saved to database with ID:', savedQuizResult.rows[0].id);
-    } catch (saveError) {
-      console.error('Error saving CQ quiz to database:', saveError);
-      // Continue with response even if saving fails
-    }
-    
     res.json(response);
 
   } catch (error) {
