@@ -108,7 +108,10 @@ export const SavedQuiz = () => {
             <Select
               value={selectedFileId}
               label="Select File"
-              onChange={(e) => setSelectedFileId(e.target.value)}
+              onChange={(e) => {
+                setSelectedFileId(e.target.value);
+                if (error) setError('');
+              }}
             >
               {files.map((file) => (
                 <MenuItem key={file.id} value={file.id}>

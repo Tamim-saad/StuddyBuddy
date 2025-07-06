@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Box, Typography, LinearProgress } from '@mui/material';
-import { CircularProgress } from "../../common/icons"; // Ensure you have this component
+import { CircularProgress } from "../../common/icons";
 import { SearchBar } from '../files/SearchBar';
 import { FileList } from '../files/FileList';
 import { UploadButton } from './UploadButton';
 import { uploadService } from '../../services';
 import { useCallback } from 'react';
 import PDFAnnotationViewer from '../PDFAnnotationViewer';
+import { toast } from '../../lib/toast';
 
 export const FileUpload = () => {
   const [files, setFiles] = useState([]);
@@ -216,21 +217,19 @@ export const FileUpload = () => {
       setViewingFile(file);
     } else {
       // For other file types, open in new tab
-      window.open(`${process.env.REACT_APP_BASE_URL}/${file.file_path}`, '_blank');
+      window.open(`${process.env.REACT_APP_BASE_URL}/${file.file_url}`, '_blank');
     }
   };
 
-  // File deletion handler
   const handleDeleteFile = async (fileId) => {
     try {
       await uploadService.deleteFile(fileId);
       // Remove the file from the local state
       setFiles(prevFiles => prevFiles.filter(file => file.id !== fileId));
-      setSelectedFiles(prevSelected => prevSelected.filter(id => id !== fileId));
-      console.log('File deleted successfully:', fileId);
+      toast.success('File deleted successfully');
     } catch (error) {
-      console.error('Failed to delete file:', error);
-      // You could add a toast notification here for better UX
+      console.error('Error deleting file:', error);
+      toast.error('Failed to delete file');
     }
   };
 
@@ -239,7 +238,7 @@ export const FileUpload = () => {
     return (
       <PDFAnnotationViewer
         fileId={annotatingFile.id}
-        filePath={annotatingFile.file_path}
+        filePath={annotatingFile.file_url}
         fileName={annotatingFile.title}
         onClose={handleAnnotatorClose}
       />
@@ -251,7 +250,7 @@ export const FileUpload = () => {
     return (
       <PDFAnnotationViewer
         fileId={viewingFile.id}
-        filePath={viewingFile.file_path}
+        filePath={viewingFile.file_url}
         fileName={viewingFile.title}
         onClose={handleViewerClose}
       />
@@ -330,7 +329,7 @@ export const FileUpload = () => {
           }}
           onStartIndexing={handleStartIndexing}
           onViewFile={handleViewFile}
-          onDeleteFile={handleDeleteFile} // Pass the delete handler
+          onDeleteFile={handleDeleteFile}
         />
       )}
     </Box>
