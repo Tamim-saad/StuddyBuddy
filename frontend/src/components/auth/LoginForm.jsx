@@ -11,7 +11,9 @@ import login_signupPicture from "../../assets/images/loginImage.jpg";
 import { authServices } from "../../auth";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
-export const LoginForm = () => {
+import CircularProgress from '@mui/material/CircularProgress';
+
+export const LoginForm = ({ onSuccess }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
@@ -25,6 +27,9 @@ export const LoginForm = () => {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
+
   useEffect(() => {
     if (emailFromQuery) {
       setFormData((prev) => ({ ...prev, email: emailFromQuery }));
@@ -37,31 +42,66 @@ export const LoginForm = () => {
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     });
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    if (error) setError('');
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
-  const handleLogin = async (e) => {
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    // Handle signup logic here
+    
+    if (!validateForm()) {
+      return;
+    }
+    
+    setLoading(true);
+    setError("");
+    setSuccess("");
+
     const payload = {
-      type: "email",
       email: formData.email,
       password: formData.password,
+      type: "email",
     };
     authServices
       .login(payload)
       .then(() => {
-          navigate("/home");
+        setFormData({ email: "", password: "" });
         setSuccess("Login successful!");
+        if (onSuccess) onSuccess();
+        navigate("/home");
       })
       .catch((err) => {
         setError(err.response?.data?.message || "Failed to login");
         alert("Failed to login");
-      });
+      })
+      .finally(() => setLoading(false));
   };
+
   const handleGoogleLoginSuccess = async (credentialResponse) => {
     try {
       // Decode the JWT token from Google
@@ -121,34 +161,44 @@ export const LoginForm = () => {
           <h3 className="text-lg text-gray-600 mb-6">
             Enter your credentials to access your account
           </h3>
-          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+          {error && <p className="text-red-500 text-sm mb-4" role="alert">{error}</p>}
           {success && <p className="text-green-500 text-sm mb-4">{success}</p>}
 
-          <form onSubmit={handleLogin} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {loading && (
+              <div className="flex justify-center" data-testid="loading-indicator">
+                <CircularProgress size={24} role="progressbar" />
+              </div>
+            )}
             <TextField
+              fullWidth
               label="Email Address"
-              type="email"
               name="email"
+              type="email"
               value={formData.email}
               onChange={handleInputChange}
-              fullWidth
-              variant="outlined"
-              className="bg-white"
               placeholder="Enter your email"
+              className="bg-white"
+              error={!!errors.email}
+              helperText={errors.email}
             />
             <TextField
+              fullWidth
               label="Password"
-              type={showPassword ? "text" : "password"}
               name="password"
+              type={showPassword ? "text" : "password"}
               value={formData.password}
               onChange={handleInputChange}
-              fullWidth
-              variant="outlined"
               placeholder="Enter your password"
+              error={!!errors.password}
+              helperText={errors.password}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton onClick={togglePasswordVisibility} edge="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
                       {showPassword ? <VisibilityOff /> : <Visibility />}
                     </IconButton>
                   </InputAdornment>
@@ -158,7 +208,8 @@ export const LoginForm = () => {
             <button
               type="submit"
               className="w-full bg-green-600 text-white font-bold py-2 px-4 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2"
-              onClick={handleLogin}
+              onClick={handleSubmit}
+              disabled={loading}
             >
               Login
             </button>

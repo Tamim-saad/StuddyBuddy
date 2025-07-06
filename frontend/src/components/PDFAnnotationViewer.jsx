@@ -48,6 +48,7 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [savedAnnotations, setSavedAnnotations] = useState({}); // Store all pages annotations
 
   const pdfUrl = annotationService.getPDFUrl(filePath);
+  console.log("PDF URL:", pdfUrl);
 
   // Convert a point from screen-space back into original PDF-space
   const convertToOriginal = (

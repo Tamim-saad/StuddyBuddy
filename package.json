@@ -15,8 +15,8 @@
   },
   "scripts": {
     "start": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run start\"",
-    "test": "cd backend && npm test",
-    "test:security": "snyk test --all-projects"
+     "test": "concurrently \"cd backend && npm test\" \"cd frontend && npm test\"",
+     "test:security": "snyk test --all-projects"
   },
   "devDependencies": {
     "concurrently": "^9.2.0",

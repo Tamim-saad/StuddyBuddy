@@ -22,6 +22,7 @@ export const SignupForm = () => {
 
   const [error, setError] = useState(null);
   const [showPassword, setShowPassword] = useState(false);
+  const [errors, setErrors] = useState({});
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const projectIdFromQuery = queryParams.get("projectId");
@@ -33,14 +34,50 @@ export const SignupForm = () => {
       ...formData,
       [name]: type === "checkbox" ? checked : value,
     });
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
+    if (error) setError('');
   };
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
 
+  const validateForm = () => {
+    const newErrors = {};
+    
+    if (!formData.name) {
+      newErrors.name = 'Name is required';
+    }
+    
+    if (!formData.email) {
+      newErrors.email = 'Email is required';
+    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
+      newErrors.email = 'Please enter a valid email';
+    }
+    
+    if (!formData.password) {
+      newErrors.password = 'Password is required';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
+    }
+    
+    if (!formData.agreeToTerms) {
+      newErrors.agreeToTerms = 'You must accept the terms and conditions';
+    }
+    
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
   const handleSignup = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+    
     // Handle signup logic here
     const payload = {
       name: formData.name,
@@ -138,6 +175,8 @@ export const SignupForm = () => {
               variant="outlined"
               className="bg-white"
               placeholder="Enter your name"
+              error={!!errors.name}
+              helperText={errors.name}
             />
             <TextField
               label="Email Address"
@@ -149,6 +188,8 @@ export const SignupForm = () => {
               variant="outlined"
               className="bg-white"
               placeholder="Enter your email"
+              error={!!errors.email}
+              helperText={errors.email}
             />
             <TextField
               label="Password"
@@ -159,6 +200,8 @@ export const SignupForm = () => {
               fullWidth
               variant="outlined"
               placeholder="Enter your password"
+              error={!!errors.password}
+              helperText={errors.password}
               InputProps={{
                 endAdornment: (
                   <InputAdornment position="end">

@@ -3546,5 +3546,29 @@
       "lastUpdated": "2025-07-05T03:32:05.873Z",
       "annotationCount": 12
     }
+  },
+  "44": {
+    "annotations": {
+      "1": []
+    },
+    "metadata": {
+      "totalPages": 4,
+      "scale": 1.5,
+      "rotation": 0,
+      "lastUpdated": "2025-07-05T18:12:53.911Z",
+      "annotationCount": 0
+    }
+  },
+  "48": {
+    "annotations": {
+      "1": []
+    },
+    "metadata": {
+      "totalPages": 2,
+      "scale": 1.5,
+      "rotation": 0,
+      "lastUpdated": "2025-07-05T18:59:47.496Z",
+      "annotationCount": 0
+    }
   }
 }

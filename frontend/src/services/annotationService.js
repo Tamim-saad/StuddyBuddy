@@ -34,7 +34,7 @@ export const annotationService = {
 
   // Get PDF for annotation (original file)
   getPDFUrl(filePath) {
-    return `${API_BASE_URL}/${filePath}`;
+    return `${API_BASE_URL}${filePath}`;
   },
 
   // Get annotated PDF URL if it exists

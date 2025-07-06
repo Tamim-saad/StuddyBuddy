@@ -14,9 +14,7 @@ const pool = new Pool({
 router.post('/generate/mcq', authenticateToken, async (req, res) => {
   try {
     // Validate API key
-    if (!process.env.GEMINI_API_KEY) {
-      throw new Error('Gemini API key not configured');
-    }
+   console.log("Hello");
 
     let { file_id, questionCount = 5, title = 'Untitled Quiz', priority = 0 } = req.body;
     
@@ -36,6 +34,7 @@ router.post('/generate/mcq', authenticateToken, async (req, res) => {
       'SELECT * FROM chotha WHERE id = $1',
       [file_id]
     );
+    console.log("File result:", fileResult.rows);
 
     if (fileResult.rows.length === 0) {
       return res.status(404).json({ error: 'File not found' });
@@ -50,12 +49,13 @@ router.post('/generate/mcq', authenticateToken, async (req, res) => {
             { key: 'file_id', match: { value: file_id } }
           ]
         },
-        limit: 100
+        limit: 1000
       });
     } catch (qdrantError) {
       console.error('Qdrant error:', qdrantError);
       return res.status(500).json({ error: 'Failed to fetch document content' });
     }
+    console.log("Chunks fetched:", chunks);
 
     if (!chunks?.points?.length) {
       return res.status(404).json({ error: 'No content found for quiz generation' });
@@ -69,6 +69,7 @@ router.post('/generate/mcq', authenticateToken, async (req, res) => {
       priority,
       file_id
     });
+    console.log('Generated MCQs:', mcqData);
 
     // Return generated quiz without saving
     res.json({
