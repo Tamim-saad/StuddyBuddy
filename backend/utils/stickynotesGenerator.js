@@ -2,7 +2,7 @@ const openai = require('../config/openaiClient');
 
 const generateStickyNotes = async (text, options = {}) => {
   const {
-    noteCount = 5,
+    noteCount = 3, // Reduced from 5 to 3 for cost efficiency
     title = 'Untitled Notes',
     file_id,
   } = options;
@@ -18,8 +18,8 @@ const generateStickyNotes = async (text, options = {}) => {
     }
 
     const prompt = `
-Generate ${noteCount} flashcards/sticky notes based on the following text.
-Also suggest a concise but descriptive title for this set of notes (max 200 characters).
+Generate ${noteCount} concise flashcards/sticky notes based on the following text.
+Also suggest a concise but descriptive title for this set of notes (max 100 characters).
 Each note should capture key concepts, definitions, or important points.
 
 Format your response as a valid JSON object in this exact structure:
@@ -36,13 +36,14 @@ Format your response as a valid JSON object in this exact structure:
 }
 
 Text to generate notes from:
-${text.substring(0, 3000)}
+${text.substring(0, 2000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-3.5-turbo-mini", // Using mini version for cost efficiency
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
+      temperature: 0.5, // Reduced temperature for more consistent results
+      max_tokens: 500, // Limit tokens to control costs
     });
 
     const response = completion.choices[0].message.content.trim();

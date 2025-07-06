@@ -12,7 +12,7 @@ const pool = new Pool({
 // Generate sticky notes from a file
 router.post('/generate', authenticateToken, async (req, res) => {
   try {
-    let { file_id, noteCount = 5 } = req.body;
+    let { file_id, noteCount = 3 } = req.body;
     
     // Validate input
     if (!file_id) {
@@ -53,12 +53,14 @@ router.post('/generate', authenticateToken, async (req, res) => {
       file_id
     });
 
-    // Return generated notes without saving
+    // Return generated notes WITHOUT saving to database
+    // Notes will only be saved when user explicitly clicks "Save"
     res.json({
       success: true,
       stickynotes: generatedNotes.notes,
       title: generatedNotes.title,
-      file_id: file_id  // Include file_id for later saving
+      file_id: file_id,
+      saved: false // Notes are not saved automatically
     });
 
   } catch (error) {
@@ -110,11 +112,12 @@ router.post('/save', authenticateToken, async (req, res) => {
           created_at
         ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
         RETURNING *`,
-        [file_id, note.front, note.back, note.tags, note.importance, title]
+        [file_id, note.front, note.back, JSON.stringify(note.tags), note.importance, title]
       );
       insertedNotes.push(result.rows[0]);
     }
 
+    console.log(`Sticky notes saved to database: ${insertedNotes.length} notes`);
     res.json({
       success: true,
       stickynotes: insertedNotes

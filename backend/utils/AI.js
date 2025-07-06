@@ -124,10 +124,10 @@ const generateEmbeddings = async (text) => {
   }
 };
 
-// Function to generate MCQ questions using Gemini with retries
+// Function to generate MCQ questions using OpenAI with reduced costs
 const generateMCQs = async (text, options = {}) => {
   const {
-    questionCount = 1,
+    questionCount = 3, // Reduced from 5 to 3 for cost efficiency
     title = 'Untitled Quiz',
     priority = 0,
     file_id,
@@ -147,6 +147,7 @@ const generateMCQs = async (text, options = {}) => {
     const prompt = `
 Generate ${questionCount} multiple choice questions based on the following text.
 Each question should test understanding of key concepts.
+Keep the questions concise and focused.
 
 Format your response as a valid JSON array in this exact structure:
 [
@@ -159,13 +160,14 @@ Format your response as a valid JSON array in this exact structure:
 ]
 
 Text to generate questions from:
-${text.substring(0, 3000)}
+${text.substring(0, 2000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-3.5-turbo-mini", // Using mini version for cost efficiency
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
+      temperature: 0.5, // Reduced temperature for more consistent results
+      max_tokens: 800, // Limit tokens to control costs
     });
 
     const response = completion.choices[0].message.content.trim();
@@ -207,7 +209,7 @@ ${text.substring(0, 3000)}
 };
 const generateCQs = async (text, options = {}) => {
   const {
-    questionCount = 1,
+    questionCount = 2, // Reduced from 5 to 2 for cost efficiency
     title = 'Untitled Quiz',
     priority = 0,
     file_id,
@@ -226,6 +228,7 @@ const generateCQs = async (text, options = {}) => {
     const prompt = `
 Generate ${questionCount} creative questions based on the following text.
 Each question should test deep understanding of concepts.
+Keep questions concise and focused.
 
 Format your response as a valid JSON array in this exact structure:
 [
@@ -240,13 +243,14 @@ Format your response as a valid JSON array in this exact structure:
 ]
 
 Text to generate questions from:
-${text.substring(0, 3000)}
+${text.substring(0, 2000)}
     `;
 
     const completion = await openai.chat.completions.create({
-      model: "gpt-3.5-turbo",
+      model: "gpt-3.5-turbo-mini", // Using mini version for cost efficiency
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
+      temperature: 0.5, // Reduced temperature for more consistent results
+      max_tokens: 600, // Limit tokens to control costs
     });
 
     const response = completion.choices[0].message.content.trim();

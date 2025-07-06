@@ -18,7 +18,7 @@ router.post('/generate/mcq', authenticateToken, async (req, res) => {
       throw new Error('Gemini API key not configured');
     }
 
-    let { file_id, questionCount = 5, title = 'Untitled Quiz', priority = 0 } = req.body;
+    let { file_id, questionCount = 3, title = 'Untitled Quiz', priority = 0 } = req.body;
     
     // Validate input
     if (!file_id) {
@@ -133,7 +133,7 @@ router.post('/generate/cq', authenticateToken, async (req, res) => {
       throw new Error('Gemini API key not configured');
     }
 
-    let { file_id, questionCount = 5, title = 'Untitled Quiz', priority = 0 } = req.body;
+    let { file_id, questionCount = 2, title = 'Untitled Quiz', priority = 0 } = req.body;
     
     // Validate input
     if (!file_id) {

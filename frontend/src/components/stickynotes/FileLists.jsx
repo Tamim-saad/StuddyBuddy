@@ -116,7 +116,7 @@ export const FileLists = () => {
         },
         body: JSON.stringify({
           file_id: fileId,
-          noteCount: 5
+          noteCount: 3 // Reduced from 5 to 3 for cost efficiency
         })
       });
 
