@@ -67,6 +67,9 @@ jobs:
           # Database Configuration
           POSTGRES_URI=postgresql://postgres:postgres@postgres:5432/postgres
           
+          # Vector Database Configuration
+          QDRANT_URL=http://qdrant:6333
+          
           # Docker Configuration
           COMPOSE_PROJECT_NAME=studdybuddy
           VM_PUBLIC_IP=${{ env.VM_IP }}
@@ -79,12 +82,66 @@ jobs:
           # Stop existing containers first
           docker-compose down --remove-orphans || true
           
-          # Build and start services with optimizations
-          DOCKER_BUILDKIT=1 docker-compose build --no-cache
+          # Clean up Docker system to free space
+          docker system prune -f || true
+          
+          # Update package-lock.json in backend to ensure consistency
+          cd backend
+          if [ -f package-lock.json ]; then
+            echo "🔄 Updating package-lock.json for consistency..."
+            npm install --package-lock-only || echo "⚠️ Package lock update failed, continuing..."
+          else
+            echo "📦 Generating package-lock.json..."
+            npm install --package-lock-only || echo "⚠️ Package lock generation failed, continuing..."
+          fi
+          cd ..
+          
+          # Update package-lock.json in frontend to ensure consistency
+          cd frontend
+          if [ -f package-lock.json ]; then
+            echo "🔄 Updating frontend package-lock.json for consistency..."
+            npm install --package-lock-only || echo "⚠️ Frontend package lock update failed, continuing..."
+          else
+            echo "📦 Generating frontend package-lock.json..."
+            npm install --package-lock-only || echo "⚠️ Frontend package lock generation failed, continuing..."
+          fi
+          cd ..
+          
+          # Build and start services with better error handling
+          echo "🔨 Building backend service..."
+          if ! DOCKER_BUILDKIT=1 docker-compose build --no-cache backend; then
+            echo "❌ Backend build failed with Docker BuildKit. Trying without BuildKit..."
+            if ! docker-compose build --no-cache backend; then
+              echo "❌ Backend build failed completely. Checking logs..."
+              docker-compose logs backend --tail=50
+              exit 1
+            fi
+          fi
+          
+          echo "🔨 Building frontend service..."
+          if ! DOCKER_BUILDKIT=1 docker-compose build --no-cache frontend; then
+            echo "❌ Frontend build failed with Docker BuildKit. Trying without BuildKit..."
+            if ! docker-compose build --no-cache frontend; then
+              echo "❌ Frontend build failed completely. Trying to fix npm issues..."
+              # Try to fix npm issues within the build context
+              docker-compose run --rm frontend sh -c "npm cache clean --force && npm install --legacy-peer-deps" || true
+              if ! docker-compose build --no-cache frontend; then
+                echo "❌ Frontend build failed after npm fix. Checking logs..."
+                docker-compose logs frontend --tail=50
+                exit 1
+              fi
+            fi
+          fi
+          
+          echo "🚀 Starting all services..."
           docker-compose up -d --remove-orphans
           
           # Quick health check with reduced wait time
           echo "🏥 Performing quick health checks..."
+          
+          # Show running containers for debugging
+          echo "📊 Current container status:"
+          docker-compose ps
           
           # Wait for services to be ready (reduced from 30s to 15s)
           echo "⏳ Waiting for services to start..."
@@ -94,7 +151,7 @@ jobs:
           echo "🔍 Checking backend health..."
           BACKEND_READY=false
           for i in {1..8}; do
-            if curl -f --max-time 5 http://localhost:4000/ >/dev/null 2>&1; then
+            if curl -f --max-time 5 http://localhost:4000/api/health >/dev/null 2>&1; then
               echo "✅ Backend is healthy"
               BACKEND_READY=true
               break
@@ -105,8 +162,15 @@ jobs:
           done
           
           if [ "$BACKEND_READY" = false ]; then
-            echo "❌ Backend health check failed. Showing logs..."
-            docker-compose logs backend --tail=20
+            echo "❌ Backend health check failed. Showing logs and container status..."
+            echo "📊 Container status:"
+            docker-compose ps
+            echo "📋 Backend logs:"
+            docker-compose logs backend --tail=30
+            echo "📋 Postgres logs:"
+            docker-compose logs postgres --tail=10
+            echo "📋 Qdrant logs:"
+            docker-compose logs qdrant --tail=10
             exit 1
           fi
           

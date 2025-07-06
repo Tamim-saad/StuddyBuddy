@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import {
   Box,
   Typography,
-  Paper,
   IconButton,
   Chip,
   Grid,
@@ -103,7 +102,7 @@ export const StickynotesDisplay = () => {
       alert(`Failed to save sticky notes: ${error.message}`);
       setSaved(false);
     } finally {
-      //   setIsSaving(false);
+      setIsSaving(false);
     }
   };
 
@@ -165,6 +164,7 @@ export const StickynotesDisplay = () => {
             opacity: isSaving || saved ? 0.8 : 1  // optional effect
           }}
         >
+          {isSaving ? 'Saving...' : saved ? 'Saved' : 'Save Notes'}
         </Button>
       </Box>
 

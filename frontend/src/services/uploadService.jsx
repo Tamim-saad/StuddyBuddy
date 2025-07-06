@@ -79,5 +79,89 @@ export const uploadService = {
       throw new Error('File search failed');
     }
     return response.data;
+  },
+
+  async generateQuiz(type, fileId, options = {}) {
+    const accessToken = authServices.getAccessToken();
+    const response = await axios.post(
+      `${API_BASE_URL}/api/quiz/generate/${type}`,
+      {
+        file_id: fileId,
+        questionCount: options.questionCount || 5,
+        title: options.title || 'Generated Quiz',
+        priority: options.priority || 0
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+    
+    if (response.status !== 200) {
+      throw new Error('Quiz generation failed');
+    }
+    return response.data;
+  },
+
+  async saveQuiz(quizData) {
+    const accessToken = authServices.getAccessToken();
+    const response = await axios.post(
+      `${API_BASE_URL}/api/quiz/save`,
+      quizData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+    
+    if (response.status !== 200) {
+      throw new Error('Quiz saving failed');
+    }
+    return response.data;
+  },
+
+  async generateStickyNotes(fileId, options = {}) {
+    const accessToken = authServices.getAccessToken();
+    const response = await axios.post(
+      `${API_BASE_URL}/api/stickynotes/generate`,
+      {
+        file_id: fileId,
+        noteCount: options.noteCount || 5
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+    
+    if (response.status !== 200) {
+      throw new Error('Sticky notes generation failed');
+    }
+    return response.data;
+  },
+
+  async saveStickyNotes(notesData) {
+    const accessToken = authServices.getAccessToken();
+    const response = await axios.post(
+      `${API_BASE_URL}/api/stickynotes/save`,
+      notesData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+    
+    if (response.status !== 200) {
+      throw new Error('Sticky notes saving failed');
+    }
+    return response.data;
   }
 };
