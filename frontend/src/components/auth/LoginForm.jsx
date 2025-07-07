@@ -118,11 +118,11 @@ export const LoginForm = ({ onSuccess }) => {
       await authServices.loginWithGoogle(googlePayload);
 
       // Navigate after successful login
-      if (projectIdFromQuery) {
-        navigate(`/kanbanBoard/projects/${projectIdFromQuery}`);
-      } else {
-        navigate("/kanbanBoard");
+       if (projectIdFromQuery) {
+      //   navigate(`/kanbanBoard/projects/${projectIdFromQuery}`);
+      // } else {
       }
+      navigate("/home/uploads");
 
       setSuccess("Google login successful!");
     } catch (err) {
@@ -218,12 +218,9 @@ export const LoginForm = ({ onSuccess }) => {
             {/* Replace the static button with Google OAuth button */}
             <div className="flex justify-center">
               <GoogleLogin
-                clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}
-                redirectUri={process.env.REACT_APP_FRONTEND_URL}
                 onSuccess={handleGoogleLoginSuccess}
                 onError={handleGoogleLoginError}
                 useOneTap
-                type="standard"
                 theme="outline"
                 size="large"
                 text="signin_with"

@@ -10,7 +10,7 @@
     "@mui/material": "^6.4.0",
     "@radix-ui/react-slot": "^1.2.3",
     "@radix-ui/react-toast": "^1.2.14",
-    "@react-oauth/google": "^0.12.1",
+    "@react-oauth/google": "^0.12.2",
     "@react-pdf-viewer/core": "^3.12.0",
     "@react-pdf-viewer/default-layout": "^3.12.0",
     "@react-pdf-viewer/highlight": "^3.12.0",
@@ -78,8 +78,6 @@
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
-    "babel-jest": "^30.0.4",
-    "identity-obj-proxy": "^3.0.0",
     "@types/aria-query": "^5.0.4",
     "@types/debug": "^4.1.12",
     "@types/estree": "^1.0.8",
@@ -95,6 +93,8 @@
     "@types/react-transition-group": "^4.4.12",
     "@types/unist": "^3.0.3",
     "@types/warning": "^3.0.3",
+    "babel-jest": "^30.0.4",
+    "identity-obj-proxy": "^3.0.0",
     "tailwindcss": "^3.4.17"
   }
 }
