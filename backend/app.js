@@ -13,6 +13,8 @@ const corsOptions = {
     "http://localhost",           // Local production
     "http://127.0.0.1:3000",      // Alternative localhost
     "http://127.0.0.1:3001",      // Alternative localhost (alternate port)
+    "http://studdybuddy.centralindia.cloudapp.azure.com", // Your Azure domain
+    "https://studdybuddy.centralindia.cloudapp.azure.com", // HTTPS Azure domain
     process.env.FRONTEND_URL,     // Environment variable (Azure VM)
     process.env.REACT_APP_BASE_URL?.replace(':5000', '').replace(':4000', '') // Frontend URL without port
   ].filter(Boolean), // Remove any undefined values
