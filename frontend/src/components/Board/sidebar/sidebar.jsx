@@ -53,7 +53,7 @@ const Sidebar = () => {
     {
       text: "Dashboard",
       icon: <DashboardIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
-      route: "dashboards",
+      route: "dashboard",
     },
     {
       text: "Uploads",

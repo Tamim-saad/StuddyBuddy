@@ -25,19 +25,33 @@ http.interceptors.request.use(
 http.interceptors.response.use(
   (response) => response,
   async (error) => {
-    console.error("session expired!");
-    if (error.response.status === 401 && !error.config._retry) {
+    // Only handle 401 errors for token refresh
+    if (error.response && error.response.status === 401 && !error.config._retry) {
+      console.error("session expired!");
       const refreshToken = authServices.getRefreshToken();
       if (!refreshToken) {
         window.location.replace("/login");
+        return Promise.reject(error);
       }
-      const { accessToken } = await authServices.login({ refreshToken });
-      if (!accessToken) {
+      
+      try {
+        const { accessToken } = await authServices.login({ refreshToken });
+        if (!accessToken) {
+          window.location.replace("/login");
+          return Promise.reject(error);
+        }
+        
+        error.config._retry = true;
+        error.config.headers.Authorization = `Bearer ${accessToken}`;
+        return http(error.config);
+      } catch (refreshError) {
         window.location.replace("/login");
+        return Promise.reject(error);
       }
-      error.config.headers.Authorization = `Bearer ${accessToken}`;
-      return axios(error.config);
     }
+    
+    // For all other errors, just reject
+    return Promise.reject(error);
   }
 );
 
