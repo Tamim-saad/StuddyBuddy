@@ -1,13 +1,19 @@
 import React, { useState, useEffect } from "react";
-import { Typography, IconButton } from "../../common/icons";
+import { Typography, IconButton, Box, Card, CardContent } from "../../common/icons";
+import { Grid } from "@mui/material";
 // import { ProjectCreate } from "./recentProjects";
 // import { PersonalTaskStats } from "./PersonalTaskStats";
 // import { TeamWorkload } from "./TeamWorkload";
 import { useMembers } from "../../context/MembersContext";
+import { plannerService } from "../../services/plannerService";
 
 export const Dashboard = () => {
   // Access the refresh function from context
   const { refreshData, loading } = useMembers();
+
+  // Planner stats state
+  const [tasks, setTasks] = useState([]);
+  const [plannerLoading, setPlannerLoading] = useState(true);
 
   // State to track when last refresh occurred
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
@@ -15,10 +21,51 @@ export const Dashboard = () => {
   // State to show refresh animation
   const [isRefreshing, setIsRefreshing] = useState(false);
 
+  // Utility function to format date as YYYY-MM-DD in local timezone
+  const formatLocalDate = (date) => {
+    return date.getFullYear() + '-' +
+           String(date.getMonth() + 1).padStart(2, '0') + '-' +
+           String(date.getDate()).padStart(2, '0');
+  };
+
+  // Load planner tasks
+  const loadTasks = async () => {
+    try {
+      setPlannerLoading(true);
+      const response = await plannerService.getTasks({});
+      setTasks(response.tasks || []);
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+    } finally {
+      setPlannerLoading(false);
+    }
+  };
+
+  // Calculate planner stats
+  const getTaskStats = () => {
+    const today = new Date();
+    const todayStr = formatLocalDate(today);
+    const todayTasks = tasks.filter(task => {
+      const taskDate = new Date(task.start_time);
+      const taskDateStr = formatLocalDate(taskDate);
+      return taskDateStr === todayStr;
+    });
+
+    return {
+      total: tasks.length,
+      today: todayTasks.length,
+      completed: tasks.filter(t => t.status === 'completed').length,
+      pending: tasks.filter(t => t.status === 'pending').length,
+      inProgress: tasks.filter(t => t.status === 'in_progress').length
+    };
+  };
+
+  const stats = getTaskStats();
+
   // Function to handle manual refresh
   const handleRefresh = () => {
     setIsRefreshing(true);
-    refreshData().then(() => {
+    Promise.all([refreshData(), loadTasks()]).then(() => {
       setLastRefreshed(new Date());
       setTimeout(() => setIsRefreshing(false), 500); // Add slight delay for animation
     });
@@ -28,11 +75,13 @@ export const Dashboard = () => {
   useEffect(() => {
     // Initial refresh
     refreshData();
+    loadTasks();
     setLastRefreshed(new Date());
 
     // Set up auto-refresh interval (every 30 seconds)
     const refreshInterval = setInterval(() => {
       refreshData();
+      loadTasks();
       setLastRefreshed(new Date());
     }, 30000);
 
@@ -44,6 +93,7 @@ export const Dashboard = () => {
   useEffect(() => {
     const handleRouteChange = () => {
       refreshData();
+      loadTasks();
       setLastRefreshed(new Date());
     };
 
@@ -75,7 +125,7 @@ export const Dashboard = () => {
             className={`text-blue-500 p-1 rounded-full hover:bg-blue-50 ${
               isRefreshing ? "animate-spin" : ""
             }`}
-            disabled={loading || isRefreshing}
+            disabled={loading || isRefreshing || plannerLoading}
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -93,6 +143,74 @@ export const Dashboard = () => {
         </div>
       </div>
 
+      {/* Planner Stats Cards */}
+      <Box className="mx-10 mb-6">
+        <Typography variant="h6" className="font-semibold text-gray-800 mb-4">
+          Study Planner Overview
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={6} sm={4} lg={2.4}>
+            <Card className="bg-blue-50 border-l-4 border-blue-500 hover:shadow-md transition-shadow">
+              <CardContent className="p-3">
+                <Typography variant="h5" className="font-bold text-blue-800">
+                  {stats.total}
+                </Typography>
+                <Typography variant="caption" className="text-blue-600 font-medium">
+                  Total Tasks
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} sm={4} lg={2.4}>
+            <Card className="bg-green-50 border-l-4 border-green-500 hover:shadow-md transition-shadow">
+              <CardContent className="p-3">
+                <Typography variant="h5" className="font-bold text-green-800">
+                  {stats.today}
+                </Typography>
+                <Typography variant="caption" className="text-green-600 font-medium">
+                  Today's Tasks
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} sm={4} lg={2.4}>
+            <Card className="bg-purple-50 border-l-4 border-purple-500 hover:shadow-md transition-shadow">
+              <CardContent className="p-3">
+                <Typography variant="h5" className="font-bold text-purple-800">
+                  {stats.completed}
+                </Typography>
+                <Typography variant="caption" className="text-purple-600 font-medium">
+                  Completed
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} sm={4} lg={2.4}>
+            <Card className="bg-orange-50 border-l-4 border-orange-500 hover:shadow-md transition-shadow">
+              <CardContent className="p-3">
+                <Typography variant="h5" className="font-bold text-orange-800">
+                  {stats.inProgress}
+                </Typography>
+                <Typography variant="caption" className="text-orange-600 font-medium">
+                  In Progress
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+          <Grid item xs={6} sm={4} lg={2.4}>
+            <Card className="bg-red-50 border-l-4 border-red-500 hover:shadow-md transition-shadow">
+              <CardContent className="p-3">
+                <Typography variant="h5" className="font-bold text-red-800">
+                  {stats.pending}
+                </Typography>
+                <Typography variant="caption" className="text-red-600 font-medium">
+                  Pending
+                </Typography>
+              </CardContent>
+            </Card>
+          </Grid>
+        </Grid>
+      </Box>
     </div>
   );
 };

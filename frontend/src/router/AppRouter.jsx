@@ -13,7 +13,6 @@ import { FileLists } from "../components/stickynotes/FileLists";
 import { StickynotesDisplay } from "../components/stickynotes/StickynotesDisplay";
 import { SavedStickynotes } from "../components/stickynotes/SavedStickynotes";
 import { SavedQuiz } from "../components/quizz/SavedQuiz";
-import { Feedback } from "../components/feedback/Feedback";
 
 
 const Layout = () => {
@@ -89,10 +88,6 @@ export const router = createBrowserRouter([
       {
         path: "saved-quiz",
         element: <SavedQuiz />,
-      },
-      {
-        path: "feedback",
-        element: <Feedback />,
       }
     ],
   },

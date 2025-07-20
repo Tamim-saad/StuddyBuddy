@@ -12,7 +12,7 @@ import {
   MenuItem,
   Alert
 } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import QuizIcon from '@mui/icons-material/Quiz';
 import { authServices } from '../../auth';
 import { uploadService } from '../../services';
@@ -25,10 +25,21 @@ export const SavedQuiz = () => {
   const [error, setError] = useState(null);
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     loadFiles();
   }, []);
+
+  // Handle preselected file ID from suggestions
+  useEffect(() => {
+    if (location.state?.preselectedFileId && files.length > 0) {
+      const fileId = location.state.preselectedFileId.toString();
+      setSelectedFileId(fileId);
+      // Clear the location state to prevent re-triggering
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [location.state, files]);
 
   useEffect(() => {
     if (selectedFileId) {

@@ -9,6 +9,7 @@ import {
   Select,
   MenuItem 
 } from '@mui/material';
+import { useLocation } from 'react-router-dom';
 import { authServices } from '../../auth';
 import { uploadService } from '../../services';
 import VpnKeyIcon from '@mui/icons-material/VpnKey';
@@ -18,10 +19,21 @@ export const SavedStickynotes = () => {
   const [files, setFiles] = useState([]);
   const [selectedFileId, setSelectedFileId] = useState('');
   const [error, setError] = useState(null);
+  const location = useLocation();
 
   useEffect(() => {
     loadFiles();
   }, []);
+
+  // Handle preselected file ID from suggestions
+  useEffect(() => {
+    if (location.state?.preselectedFileId && files.length > 0) {
+      const fileId = location.state.preselectedFileId.toString();
+      setSelectedFileId(fileId);
+      // Clear the location state to prevent re-triggering
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [location.state, files]);
 
   useEffect(() => {
     if (selectedFileId) {

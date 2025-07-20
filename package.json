@@ -14,8 +14,12 @@
   },
   "scripts": {
     "start": "concurrently \"cd backend && npm run dev\" \"cd frontend && npm run start\"",
-     "test": "concurrently \"cd backend && npm test\" \"cd frontend && npm test\"",
-     "test:security": "snyk test --all-projects"
+    "test": "concurrently --names \"BACKEND,FRONTEND\" --prefix-colors \"blue,green\" \"cd backend && npm test\" \"cd frontend && npm test -- --watchAll=false\"",
+    "test:frontend": "cd frontend && npm test -- --watchAll=false",
+    "test:backend": "cd backend && npm test",
+    "test:watch": "concurrently \"cd backend && npm run test:watch\" \"cd frontend && npm test\"",
+    "test:coverage": "concurrently \"cd backend && npm run test:coverage\" \"cd frontend && npm run coverage\"",
+    "test:security": "snyk test --all-projects"
   },
   "devDependencies": {
     "concurrently": "^9.2.0",
