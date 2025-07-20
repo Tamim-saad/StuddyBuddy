@@ -7,9 +7,14 @@ import {
   Chip 
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
-import QuizIcon from '@mui/icons-material/Quiz';
 
 export const QuizResultView = ({ quiz, onBack }) => {
+  // Debug logging
+  console.log('QuizResultView - quiz data:', quiz);
+  console.log('QuizResultView - quiz.questions:', quiz?.questions);
+  console.log('QuizResultView - quiz.questions type:', typeof quiz?.questions);
+  console.log('QuizResultView - quiz.questions length:', quiz?.questions?.length);
+
   if (!quiz) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
@@ -20,10 +25,13 @@ export const QuizResultView = ({ quiz, onBack }) => {
   }
 
   const isMCQ = quiz.type === 'mcq';
-  // Add null checks for questions
+  // Handle both formats: direct array or nested structure
   const questions = isMCQ ? 
     (quiz.questions || []) : 
-    (quiz.questions?.questions || []);
+    (Array.isArray(quiz.questions) ? quiz.questions : (quiz.questions?.questions || []));
+  
+  console.log('QuizResultView - questions array:', questions);
+  console.log('QuizResultView - questions count:', questions.length);
 
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>

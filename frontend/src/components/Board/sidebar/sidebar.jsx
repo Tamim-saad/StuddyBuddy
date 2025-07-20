@@ -6,35 +6,32 @@ import {
   ListItemText,
   Collapse,
 } from "@mui/material";
-import ExpandLess from "@mui/icons-material/ExpandLess";
-import ExpandMore from "@mui/icons-material/ExpandMore";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import AssignmentIcon from "@mui/icons-material/Assignment";
-import FolderIcon from "@mui/icons-material/Folder";
-import QuizIcon from "@mui/icons-material/Quiz";
-import StickyNote2Icon from "@mui/icons-material/StickyNote2";
-import EventNoteIcon from "@mui/icons-material/EventNote";
-import ForumIcon from "@mui/icons-material/Forum";
-import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import LogoutIcon from "@mui/icons-material/Logout";
-import NotificationsIcon from "@mui/icons-material/Notifications";
-import CreateIcon from "@mui/icons-material/Create";
-import VisibilityIcon from "@mui/icons-material/Visibility";
+
+import{
+  LayoutDashboard,
+  FileUp,
+  FileQuestion,
+  StickyNote,
+  CalendarDays,
+  MessageCircle,
+  User,
+  Bell,
+  FilePenLine,
+  Eye,
+  ChevronUp,
+  ChevronDown, 
+  LogOutIcon
+} from "lucide-react";
 
 import { amber } from "@mui/material/colors";
 import React, { useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 const Sidebar = () => {
   const navigate = useNavigate();
-  const { projectId } = useParams();
-  const [isProjectModalOpen, setisProjectModalOpen] = useState(false);
   const [openQuiz, setOpenQuiz] = useState(false);
   const [openSticky, setOpenSticky] = useState(false);
 
-  const handleCloseProjectModal = () => {
-    setisProjectModalOpen(false);
-  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -52,74 +49,73 @@ const Sidebar = () => {
   const menuItems = [
     {
       text: "Dashboard",
-      icon: <DashboardIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
-      route: "dashboard",
+      icon: <LayoutDashboard size={24} color="#fffbeb" />,
+      route: "dashboards",
     },
     {
       text: "Uploads",
-      icon: <AssignmentIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+      icon: <FileUp size={24} color="#fffbeb" />,
       route: "uploads",
     },
     {
-      text: "Chotha",
-      icon: <FolderIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
-      route: "chotha",
-    },
-    {
       text: "Quizz",
-      icon: <QuizIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+      icon: <FileQuestion size={24} color="#fffbeb" />,
       route: "quiz",
       hasSubmenu: true,
       submenu: [
         {
           text: "Generate Quiz",
-          icon: <CreateIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
-          //route: "quiz/generate",
+          icon: <FilePenLine size={24} color="#fffbeb" />,
           route: "view-files",
         },
         {
           text: "View Quiz",
-          icon: <VisibilityIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+          icon: <Eye size={24} color="#fffbeb" />,
           route: "saved-quiz",
         },
       ],
     },
     {
       text: "Sticky Notes",
-      icon: <StickyNote2Icon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+      icon: <StickyNote size={24} color="#fffbeb" />,
       route: "stickynotes",
       hasSubmenu: true,
       submenu: [
         {
           text: "Generate Notes",
-          icon: <CreateIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+          icon: <FilePenLine size={24} color="#fffbeb" />,
           route: "file-list",
         },
         {
           text: "View Notes",
-          icon: <VisibilityIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+          icon: <Eye size={24} color="#fffbeb" />,
           route: "saved-notes", 
         },
       ],
     },
     {
       text: "Planner",
-      icon: <EventNoteIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+      icon: <CalendarDays size={24} color="#fffbeb" />,
       route: "planner",
     },
     {
       text: "Forum",
-      icon: <ForumIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+      icon: <MessageCircle size={24} color="#fffbeb" />,
       route: "forum",
     },
     {
+      text: "Feedback",
+      icon: <FilePenLine size={24} color="#fffbeb" />, // Changed to FilePenLine for feedback
+      route: "feedback",
+    },
+    {
       text: "My Profile",
-      icon: <AccountCircleIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+      icon: <User size={24} color="#fffbeb" />,
       route: "profile",
     },
     {
       text: "Notifications",
-      icon: <NotificationsIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+      icon: <Bell size={24} color="#fffbeb" />,
       route: "notifications",
     },
   ];
@@ -134,13 +130,14 @@ const Sidebar = () => {
 
   // Separate bottom items for convenience
   const bottomItems = menuItems.filter(
-    (item) => item.text === "My Profile" || item.text === "Notifications"
+    (item) => item.text === "My Profile" || item.text === "Notifications" || item.text === "Feedback" 
   );
 
   const topItems = menuItems.filter(
     (item) =>
       item.text !== "My Profile" &&
       item.text !== "Notifications" &&
+      item.text !== "Feedback" &&
       item.text !== "Logout"
   );
 
@@ -194,9 +191,9 @@ const Sidebar = () => {
                     />
                     {item.hasSubmenu && (
                       (item.text === "Quizz" ? openQuiz : openSticky) ? (
-                        <ExpandLess sx={{ color: amber[50] }} />
+                        <ChevronUp sx={{ color: amber[50] }} />
                       ) : (
-                        <ExpandMore sx={{ color: amber[50] }} />
+                        <ChevronDown sx={{ color: amber[50] }} />
                       )
                     )}
                   </ListItem>
@@ -275,7 +272,7 @@ const Sidebar = () => {
                   className="text-white-900 flex items-center justify-center"
                   sx={{ minWidth: "40px" }}
                 >
-                  <LogoutIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />
+                  <LogOutIcon  />
                 </ListItemIcon>
                 <ListItemText primary="Logout" className="text-white text-base" />
               </ListItem>

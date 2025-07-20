@@ -127,25 +127,25 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
       instanceRef.current = viewer;
       console.log("✅ Advanced PDF viewer initialized");
 
-      // Timeout for document loading
+      // Timeout for document loading - increased timeout
       setTimeout(() => {
         if (!documentLoaded) {
-          console.warn("Document load taking too long, switching to fallback");
-          throw new Error("Document load timeout");
+          console.warn("Document load taking too long, showing fallback option");
+          setError("Document is taking a while to load. You can try the fallback viewer if needed.");
+          setIsLoading(false);
         }
-      }, 15000);
+      }, 6000); // Increased to 30 seconds
 
     } catch (err) {
       console.error("❌ Advanced viewer failed:", err);
-      console.log("🔄 Switching to fallback viewer...");
+      console.log("Showing error message with fallback option...");
       
       // Clean up any partial initialization
       await cleanupViewer();
       
-      // Switch to fallback
-      setUseFallback(true);
+      // Show error with fallback option instead of auto-switching
+      setError(`Failed to load PDF viewer: ${err.message}`);
       setIsLoading(false);
-      setError(null);
     }
   }, [filePath, containerId, initAttempted, cleanupViewer]);
 

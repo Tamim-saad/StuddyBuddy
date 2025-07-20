@@ -146,8 +146,14 @@ describe('Quiz Routes', () => {
         questions: []
       };
 
+      // Mock file existence check
       mockPool.query.mockResolvedValueOnce({
-        rows: [{ ...mockQuiz, id: 1 }]
+        rows: [{ id: 1 }]
+      });
+
+      // Mock quiz insertion
+      mockPool.query.mockResolvedValueOnce({
+        rows: [{ id: 1, created_at: new Date().toISOString() }]
       });
 
       const response = await request(app)
@@ -157,7 +163,7 @@ describe('Quiz Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.success).toBe(true);
-      expect(response.body.quiz).toHaveProperty('id');
+      expect(response.body.data).toHaveProperty('id');
     });
   });
 

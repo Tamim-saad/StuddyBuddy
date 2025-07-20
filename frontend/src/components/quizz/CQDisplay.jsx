@@ -13,8 +13,6 @@ import {
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import Rating from '@mui/material/Rating';
-import StarIcon from '@mui/icons-material/Star';
 import { getAIScore } from '../../services/aiScoring';
 import SaveIcon from '@mui/icons-material/Save';
 import CheckIcon from '@mui/icons-material/Check';
@@ -26,7 +24,8 @@ export const CQDisplay = () => {
   const navigate = useNavigate();
   const quiz = location.state?.quiz;
 
-  console.log("length of quiz questions:", quiz?.questions.questions?.length);
+  console.log("Quiz received:", quiz);
+  const questions = quiz?.questions || [];
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
@@ -44,7 +43,7 @@ export const CQDisplay = () => {
   };
 
   const handleNext = () => {
-    if (currentQuestion < quiz.questions.questions.length - 1) {
+    if (currentQuestion < questions.length - 1) {
       setCurrentQuestion(currentQuestion + 1);
     } 
   };
@@ -57,11 +56,11 @@ export const CQDisplay = () => {
     setLoading(true);
     try {
       const evaluatedScores = {};
-      for (let i = 0; i < quiz.questions.questions.length; i++) {
+      for (let i = 0; i < questions.length; i++) {
         const score = await getAIScore(
           answers[i],
-          quiz.questions.questions[i].modelAnswer,
-          quiz.questions.questions[i].rubric
+          questions[i].modelAnswer,
+          questions[i].rubric
         );
         evaluatedScores[i] = score;
       }
@@ -117,7 +116,7 @@ export const CQDisplay = () => {
     }
   }, [scores, showResults]);
 
-  if (!quiz || !quiz.questions.questions) {
+  if (!quiz || !questions.length) {
     return (
       <Box sx={{ p: 3 }}>
         <Typography color="error">No quiz data found</Typography>
@@ -128,14 +127,14 @@ export const CQDisplay = () => {
     );
   }
 
-  const currentCQ = quiz.questions.questions[currentQuestion];
+  const currentCQ = questions[currentQuestion];
 
   return (
     <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
       {!showResults ? (
         <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
           <Typography variant="h6" sx={{ mb: 3, color: '#1e40af' }}>
-            Question {currentQuestion + 1} of {quiz.questions.questions.length}
+            Question {currentQuestion + 1} of {questions.length}
           </Typography>
           
           <Typography variant="body1" sx={{ mb: 4, fontSize: '1.1rem' }}>
@@ -171,7 +170,7 @@ export const CQDisplay = () => {
             </Button>
             <Button
               variant="contained"
-              onClick={currentQuestion < quiz.questions.questions.length - 1 ? handleNext : handleEvaluate}
+              onClick={currentQuestion < questions.length - 1 ? handleNext : handleEvaluate}
               disabled={loading}
               sx={{
                 bgcolor: '#22c55e',
@@ -185,7 +184,7 @@ export const CQDisplay = () => {
             >
               {loading ? (
                 <CircularProgress size={24} sx={{ color: 'white' }} />
-              ) : currentQuestion < quiz.questions.questions.length - 1 ? (
+              ) : currentQuestion < questions.length - 1 ? (
                 'Next'
               ) : (
                 'Evaluate'
@@ -200,10 +199,10 @@ export const CQDisplay = () => {
           </Typography>
           
           <Typography variant="h6" sx={{ mb: 4, color: '#22c55e' }}>
-            Total Score: {totalScore} / {quiz.questions.questions.length * 10}
+            Total Score: {totalScore} / {questions.length * 10}
           </Typography>
           
-          {quiz.questions.questions.map((q, index) => (
+          {questions.map((q, index) => (
             <Box key={index} sx={{ mb: 4, p: 2, bgcolor: '#f8fafc', borderRadius: 1 }}>
               <Typography variant="h6" sx={{ mb: 2 }}>
                 Question {index + 1}: {q.question}

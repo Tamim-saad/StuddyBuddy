@@ -174,14 +174,9 @@ export const SavedQuiz = () => {
                       </Box>
 
                       <Typography variant="body2" color="text.secondary">
-                        
-                      Questions: {Array.isArray(quiz.questions?.questions)
-    ? quiz.questions.questions.length
-    : Array.isArray(quiz.questions)
-    ? quiz.questions.length
-    : 0}
+                        Questions: {quiz.question_count || 0}
                       </Typography>
-                      {quiz.score !== undefined && (
+                      {quiz.score !== undefined && quiz.score !== null && (
                         <Typography variant="body2" color="text.secondary">
                           Score: {quiz.score}
                         </Typography>
