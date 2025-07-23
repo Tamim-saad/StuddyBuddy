@@ -19,6 +19,8 @@ export const FileView = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [generatedQuiz, setGeneratedQuiz] = useState(null);
+  const [cqCount, setCqCount] = useState(5);
+  const [mcqCount, setMcqCount] = useState(5);
 
   useEffect(() => {
     loadFiles();
@@ -98,7 +100,7 @@ export const FileView = () => {
     }) ||
     [];
 
-  const handleGenerateQuiz = async (type) => {
+  const handleGenerateQuiz = async (type, questionCount = 5) => {
     const fileId = selectedFiles[0];
     if (!fileId) {
       alert("Please select a file first");
@@ -120,7 +122,7 @@ export const FileView = () => {
           },
           body: JSON.stringify({
             file_id: fileId,
-            questionCount: 5,
+            questionCount: Math.min(Math.max(1, questionCount), 50),
             title: `${type.toUpperCase()} Quiz for ${fileTitle}`,
             priority: 0,
           }),
@@ -259,28 +261,93 @@ export const FileView = () => {
                 onDeleteFile={handleDeleteFile} // Pass the delete handler
               />
 
-              {/* Buttons for quiz generation */}
+              {/* Question count inputs and buttons for quiz generation */}
               <Box
                 sx={{
                   display: "flex",
-                  justifyContent: "center",
+                  flexDirection: "column",
+                  alignItems: "center",
                   mt: 4,
-                  gap: 2,
+                  gap: 3,
                 }}
               >
-                <Button
-                  onClick={() => handleGenerateQuiz("cq")}
-                  disabled={!selectedFiles.length || loading}
+                {/* Question count inputs */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    gap: 4,
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    justifyContent: "center",
+                  }}
                 >
-                  {loading ? "Generating..." : "Generate CQ"}
-                </Button>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="body2" sx={{ color: "gray", minWidth: "80px" }}>
+                      CQ Count:
+                    </Typography>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={cqCount}
+                      onChange={(e) => setCqCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                      style={{
+                        width: "60px",
+                        padding: "4px 8px",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        textAlign: "center",
+                      }}
+                    />
+                  </Box>
+                  
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Typography variant="body2" sx={{ color: "gray", minWidth: "80px" }}>
+                      MCQ Count:
+                    </Typography>
+                    <input
+                      type="number"
+                      min="1"
+                      max="50"
+                      value={mcqCount}
+                      onChange={(e) => setMcqCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+                      style={{
+                        width: "60px",
+                        padding: "4px 8px",
+                        border: "1px solid #ccc",
+                        borderRadius: "4px",
+                        textAlign: "center",
+                      }}
+                    />
+                  </Box>
+                </Box>
 
-                <Button
-                  onClick={() => handleGenerateQuiz("mcq")}
-                  disabled={!selectedFiles.length || loading}
+                {/* Generation buttons */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    gap: 2,
+                  }}
                 >
-                  {loading ? "Generating..." : "Generate MCQ"}
-                </Button>
+                  <Button
+                    onClick={() => handleGenerateQuiz("cq", cqCount)}
+                    disabled={!selectedFiles.length || loading}
+                  >
+                    {loading ? "Generating..." : `Generate ${cqCount} CQ`}
+                  </Button>
+
+                  <Button
+                    onClick={() => handleGenerateQuiz("mcq", mcqCount)}
+                    disabled={!selectedFiles.length || loading}
+                  >
+                    {loading ? "Generating..." : `Generate ${mcqCount} MCQ`}
+                  </Button>
+                </Box>
+
+                <Typography variant="caption" sx={{ color: "gray", textAlign: "center" }}>
+                  Maximum 50 questions per generation
+                </Typography>
               </Box>
             </>
           )}
