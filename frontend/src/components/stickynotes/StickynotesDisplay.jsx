@@ -18,16 +18,22 @@ import CheckIcon from '@mui/icons-material/Check';
 import { amber, green, blue } from '@mui/material/colors';
 import { authServices } from '../../auth';
 
-export const StickynotesDisplay = () => {
+export const StickynotesDisplay = ({ 
+  stickynotes: propStickynotes, 
+  fileId: propFileId, 
+  title: propTitle, 
+  embedded = false, 
+  onClose 
+}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [flippedCards, setFlippedCards] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   console.log('Location state:', location.state);
-  const stickynotes = location.state?.stickynotes || [];
-  const fileId = location.state?.file_id;
-  const title = location.state?.title || 'Study Notes';
+  const stickynotes = propStickynotes || location.state?.stickynotes || [];
+  const fileId = propFileId || location.state?.file_id;
+  const title = propTitle || location.state?.title || 'Study Notes';
   console.log('Sticky notes id:', fileId);
   console.log('Sticky notes title:', title);
 
@@ -113,18 +119,24 @@ export const StickynotesDisplay = () => {
           No sticky notes found
         </Typography>
         <Button
-          onClick={() => navigate('/home/file-list')}
+          onClick={() => {
+            if (embedded && onClose) {
+              onClose();
+            } else {
+              navigate('/home/file-list');
+            }
+          }}
           startIcon={<ArrowBackIcon />}
           sx={{ mt: 4, p: 2 }}
         >
-          Back to Files
+          {embedded ? 'Close' : 'Back to Files'}
         </Button>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 10, mx: 8 }}>
+    <Box sx={{ p: embedded ? 2 : 10, mx: embedded ? 2 : 8 }}>
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
@@ -135,7 +147,13 @@ export const StickynotesDisplay = () => {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <IconButton
-            onClick={() => navigate('/home/stickynotes')}
+            onClick={() => {
+              if (embedded && onClose) {
+                onClose();
+              } else {
+                navigate('/home/stickynotes');
+              }
+            }}
             sx={{ mr: 4 }}
           >
             <ArrowBackIcon />

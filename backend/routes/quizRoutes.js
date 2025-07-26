@@ -541,4 +541,149 @@ router.delete('/saved/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Generate PDF summary
+router.post('/generate-summary', authenticateToken, async (req, res) => {
+  try {
+    const { file_id } = req.body;
+    
+    if (!file_id) {
+      return res.status(400).json({ error: 'file_id is required' });
+    }
+
+    // Get file information
+    const fileResult = await pool.query(
+      'SELECT * FROM chotha WHERE id = $1',
+      [file_id]
+    );
+
+    if (fileResult.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Get text chunks
+    const chunks = await client.scroll('document_chunks', {
+      filter: {
+        must: [
+          { key: 'file_id', match: { value: parseInt(file_id) } }
+        ]
+      },
+      limit: 1000
+    });
+
+    if (chunks[0].length === 0) {
+      return res.status(404).json({ error: 'No content found for this file' });
+    }
+
+    // Combine chunks
+    const textContent = chunks[0].map(chunk => chunk.payload.text).join(' ');
+    
+    if (!gemini) {
+      return res.status(503).json({ error: 'AI service not available' });
+    }
+
+    // Generate summary using Gemini
+    const prompt = `Please provide a comprehensive summary of the following document content. Include the main topics, key points, and important details:\n\n${textContent.substring(0, 8000)}`;
+    
+    const result = await gemini.generateContent(prompt);
+    const summary = result.response.text();
+
+    res.json({
+      success: true,
+      summary: summary
+    });
+
+  } catch (error) {
+    console.error('Error generating summary:', error);
+    res.status(500).json({ error: 'Failed to generate summary' });
+  }
+});
+
+// Chat with PDF content
+router.post('/chat', authenticateToken, async (req, res) => {
+  try {
+    const { file_id, message } = req.body;
+    
+    if (!file_id || !message) {
+      return res.status(400).json({ error: 'file_id and message are required' });
+    }
+
+    // Get text chunks
+    const chunks = await client.scroll('document_chunks', {
+      filter: {
+        must: [
+          { key: 'file_id', match: { value: parseInt(file_id) } }
+        ]
+      },
+      limit: 1000
+    });
+
+    if (chunks[0].length === 0) {
+      return res.status(404).json({ error: 'No content found for this file' });
+    }
+
+    // Combine chunks
+    const textContent = chunks[0].map(chunk => chunk.payload.text).join(' ');
+    
+    if (!gemini) {
+      return res.status(503).json({ error: 'AI service not available' });
+    }
+
+    // Generate response using Gemini
+    const prompt = `You are a helpful assistant that answers questions about the provided document. Here is the document content:\n\n${textContent.substring(0, 6000)}\n\nUser question: ${message}\n\nPlease provide a helpful and accurate answer based on the document content:`;
+    
+    const result = await gemini.generateContent(prompt);
+    const response = result.response.text();
+
+    res.json({
+      success: true,
+      response: response
+    });
+
+  } catch (error) {
+    console.error('Error in chat:', error);
+    res.status(500).json({ error: 'Failed to process chat message' });
+  }
+});
+
+// Generate quiz (updated to work with chatbot)
+router.post('/generate', authenticateToken, async (req, res) => {
+  try {
+    const { file_id, question_count = 5 } = req.body;
+    
+    if (!file_id) {
+      return res.status(400).json({ error: 'file_id is required' });
+    }
+
+    // Get text chunks
+    const chunks = await client.scroll('document_chunks', {
+      filter: {
+        must: [
+          { key: 'file_id', match: { value: parseInt(file_id) } }
+        ]
+      },
+      limit: 1000
+    });
+
+    if (chunks[0].length === 0) {
+      return res.status(404).json({ error: 'No content found for this file' });
+    }
+
+    // Combine chunks
+    const textContent = chunks[0].map(chunk => chunk.payload.text).join(' ');
+    
+    // Generate MCQs using existing function
+    const questions = await generateMCQs(textContent, question_count);
+
+    res.json({
+      success: true,
+      type: 'mcq',
+      questions: questions
+    });
+
+  } catch (error) {
+    console.error('Error generating quiz:', error);
+    res.status(500).json({ error: 'Failed to generate quiz' });
+  }
+});
+
 module.exports = router;

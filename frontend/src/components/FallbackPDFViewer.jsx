@@ -1,6 +1,7 @@
 // src/components/FallbackPDFViewer.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { annotationService } from '../services/annotationService';
+import PDFChatbot from './PDFChatbot';
 
 const FallbackPDFViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [viewerState, setViewerState] = useState('loading'); // loading, pdf-js, iframe, embed, download
@@ -385,6 +386,13 @@ const FallbackPDFViewer = ({ fileId, filePath, onClose, fileName }) => {
       <div className="flex-1 overflow-hidden">
         {renderContent()}
       </div>
+      
+      {/* PDF Chatbot */}
+      <PDFChatbot 
+        fileId={fileId} 
+        filePath={filePath} 
+        fileName={fileName} 
+      />
     </div>
   );
 };

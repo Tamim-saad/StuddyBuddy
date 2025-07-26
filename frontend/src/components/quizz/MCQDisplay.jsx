@@ -15,10 +15,10 @@ import CheckIcon from '@mui/icons-material/Check';
 import { green } from '@mui/material/colors';
 import { authServices } from '../../auth';
 
-export const MCQDisplay = () => {
+export const MCQDisplay = ({ quiz: propQuiz, embedded = false, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const quiz = location.state?.quiz;
+  const quiz = propQuiz || location.state?.quiz;
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -54,7 +54,11 @@ export const MCQDisplay = () => {
   };
 
   const handleBack = () => {
-    navigate('/home/quiz');  // Updated path
+    if (embedded && onClose) {
+      onClose();
+    } else {
+      navigate('/home/quiz');  // Updated path
+    }
   };
 
   const handleSave = async () => {
@@ -104,7 +108,7 @@ export const MCQDisplay = () => {
   const currentMCQ = quiz.questions[currentQuestion];
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+    <Box sx={{ maxWidth: 800, mx: 'auto', p: embedded ? 2 : 3 }}>
       {!showResults ? (
         <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
           <Typography variant="h6" sx={{ mb: 3, color: '#1e40af' }}>

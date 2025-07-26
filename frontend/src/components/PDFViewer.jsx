@@ -3,6 +3,7 @@ import React, { useEffect, useRef, useState, useCallback } from "react";
 import { annotationService } from "../services/annotationService";
 import FallbackPDFViewer from "./FallbackPDFViewer";
 import PDFAnnotationViewer from "./PDFAnnotationViewer";
+import PDFChatbot from "./PDFChatbot";
 import "./PDFViewer.css";
 
 const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
@@ -389,6 +390,13 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
           </div>
         )}
       </div>
+      
+      {/* PDF Chatbot */}
+      <PDFChatbot 
+        fileId={fileId} 
+        filePath={filePath} 
+        fileName={fileName} 
+      />
     </div>
   );
 };
