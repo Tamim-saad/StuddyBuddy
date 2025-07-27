@@ -1,5 +1,4 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { createPortal } from 'react-dom';
 import {
   Box,
   Fab,
@@ -7,9 +6,7 @@ import {
   Typography,
   TextField,
   IconButton,
-  Dialog,
-  DialogTitle,
-  DialogContent,
+  Modal,
   CircularProgress,
   Chip,
   Alert,
@@ -406,48 +403,6 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
                     variant="outlined"
                     size="small"
                   />
-                  {/* Test Buttons for Debugging */}
-                  <Chip
-                    label="Test Quiz"
-                    onClick={() => {
-                      const testQuiz = {
-                        type: 'mcq',
-                        questions: [
-                          {
-                            question: "Test question?",
-                            options: ["A", "B", "C", "D"],
-                            correctAnswer: "A"
-                          }
-                        ],
-                        file_id: fileId,
-                        title: "Test Quiz"
-                      };
-                      setCurrentQuiz(testQuiz);
-                      setQuizDialogOpen(true);
-                      console.log('Test quiz dialog opened');
-                    }}
-                    color="info"
-                    variant="outlined"
-                    size="small"
-                  />
-                  <Chip
-                    label="Test Notes"
-                    onClick={() => {
-                      const testNotes = [
-                        {
-                          content: "Test note content",
-                          category: "test",
-                          importance: "high"
-                        }
-                      ];
-                      setCurrentStickynotes(testNotes);
-                      setStickyDialogOpen(true);
-                      console.log('Test sticky notes dialog opened');
-                    }}
-                    color="info"
-                    variant="outlined"
-                    size="small"
-                  />
                 </Box>
               </Box>
 
@@ -503,36 +458,57 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         </Paper>
       )}
 
-      {/* Quiz Dialog - Rendered using createPortal to document.body */}
-      {quizDialogOpen && createPortal(
-        <Dialog
-          open={quizDialogOpen}
-          onClose={() => {
-            setQuizDialogOpen(false);
-            setCurrentQuiz(null);
-          }}
-          maxWidth="md"
-          fullWidth
-          sx={{ 
-            zIndex: 9999,
-            '& .MuiDialog-paper': {
-              height: '90vh',
-              maxHeight: '90vh'
-            }
+            {/* Quiz Modal */}
+      <Modal
+        open={quizDialogOpen}
+        onClose={() => {
+          setQuizDialogOpen(false);
+          setCurrentQuiz(null);
+        }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000
+        }}
+      >
+        <Paper
+          sx={{
+            width: '90vw',
+            maxWidth: '800px',
+            height: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 2,
+            overflow: 'hidden',
+            outline: 'none'
           }}
         >
-          <DialogTitle>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="h6">📝 Quiz Generated from PDF</Typography>
-              <IconButton onClick={() => {
+          {/* Header */}
+          <Box
+            sx={{
+              bgcolor: '#1976d2',
+              color: 'white',
+              p: 2,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
+            <Typography variant="h6">📝 Quiz Generated from PDF</Typography>
+            <IconButton
+              sx={{ color: 'white' }}
+              onClick={() => {
                 setQuizDialogOpen(false);
                 setCurrentQuiz(null);
-              }}>
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent sx={{ p: 1, overflow: 'auto', height: 'calc(90vh - 64px)' }}>
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          
+          {/* Content */}
+          <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
             {currentQuiz && currentQuiz.questions && currentQuiz.questions.length > 0 ? (
               <MCQDisplay 
                 quiz={currentQuiz}
@@ -562,41 +538,61 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
                 </Button>
               </Box>
             )}
-          </DialogContent>
-        </Dialog>,
-        document.body
-      )}
+          </Box>
+        </Paper>
+      </Modal>
 
-      {/* Sticky Notes Dialog - Rendered using createPortal to document.body */}
-      {stickyDialogOpen && createPortal(
-        <Dialog
-          open={stickyDialogOpen}
-          onClose={() => {
-            setStickyDialogOpen(false);
-            setCurrentStickynotes(null);
-          }}
-          maxWidth="lg"
-          fullWidth
-          sx={{ 
-            zIndex: 9999,
-            '& .MuiDialog-paper': {
-              height: '90vh',
-              maxHeight: '90vh'
-            }
+      {/* Sticky Notes Modal */}
+      <Modal
+        open={stickyDialogOpen}
+        onClose={() => {
+          setStickyDialogOpen(false);
+          setCurrentStickynotes(null);
+        }}
+        sx={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 10000
+        }}
+      >
+        <Paper
+          sx={{
+            width: '90vw',
+            maxWidth: '1000px',
+            height: '90vh',
+            display: 'flex',
+            flexDirection: 'column',
+            borderRadius: 2,
+            overflow: 'hidden',
+            outline: 'none'
           }}
         >
-          <DialogTitle>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              <Typography variant="h6">📌 Sticky Notes from PDF</Typography>
-              <IconButton onClick={() => {
+          {/* Header */}
+          <Box
+            sx={{
+              bgcolor: '#1976d2',
+              color: 'white',
+              p: 2,
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}
+          >
+            <Typography variant="h6">📌 Sticky Notes from PDF</Typography>
+            <IconButton
+              sx={{ color: 'white' }}
+              onClick={() => {
                 setStickyDialogOpen(false);
                 setCurrentStickynotes(null);
-              }}>
-                <CloseIcon />
-              </IconButton>
-            </Box>
-          </DialogTitle>
-          <DialogContent sx={{ p: 1, overflow: 'auto', height: 'calc(90vh - 64px)' }}>
+              }}
+            >
+              <CloseIcon />
+            </IconButton>
+          </Box>
+          
+          {/* Content */}
+          <Box sx={{ flex: 1, overflow: 'auto', p: 1 }}>
             {currentStickynotes && Array.isArray(currentStickynotes) && currentStickynotes.length > 0 ? (
               <StickynotesDisplay 
                 stickynotes={currentStickynotes}
@@ -628,10 +624,9 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
                 </Button>
               </Box>
             )}
-          </DialogContent>
-        </Dialog>,
-        document.body
-      )}
+          </Box>
+        </Paper>
+      </Modal>
     </>
   );
 };
