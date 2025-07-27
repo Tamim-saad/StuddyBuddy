@@ -107,11 +107,11 @@ router.get('/', authenticateToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching planner tasks:', error);
-    res.status(500).json({ error: 'Failed to fetch planner tasks' });
+    res.status(500).json({ error: 'Failed to fetch  tasks' });
   }
 });
 
-// Create new planner task
+// Create new  task
 router.post('/', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
@@ -175,11 +175,117 @@ router.post('/', authenticateToken, async (req, res) => {
 });
 
 // Update planner task
+// router.put('/:taskId', authenticateToken, async (req, res) => {
+//   try {
+//     const userId = req.user.id;
+//     const { taskId } = req.params;
+//     const updateFields = req.body;
+
+//     console.log('Update request received:', { taskId, updateFields });
+
+//     // Remove fields that shouldn't be updated directly
+//     delete updateFields.id;
+//     delete updateFields.user_id;
+//     delete updateFields.created_at;
+
+//     const [prev] = (await pool.query(
+//       'SELECT title, priority, status, resource_id, resource_ids, description, task_type, end_time, start_time FROM planner_tasks WHERE id = $1',
+//       [taskId]  // Updated from [id] to [taskId]
+//     )).rows;
+
+//     // Validate ownership
+//     const ownershipCheck = await pool.query(
+//       'SELECT id FROM planner_tasks WHERE id = $1 AND user_id = $2',
+//       [taskId, userId]
+//     );
+
+//     if (ownershipCheck.rows.length === 0) {
+//       return res.status(404).json({ error: 'Task not found or access denied' });
+//     }
+
+//     // Validate fields if they are present
+//     if (updateFields.priority && !['low', 'medium', 'high'].includes(updateFields.priority)) {
+//       return res.status(400).json({ error: 'Priority must be low, medium, or high' });
+//     }
+
+//     if (updateFields.status && !['pending', 'in_progress', 'completed'].includes(updateFields.status)) {
+//       return res.status(400).json({ error: 'Status must be pending, in_progress, or completed' });
+//     }
+
+//     if (updateFields.task_type && !['task', 'session', 'quiz', 'flashcard', 'study'].includes(updateFields.task_type)) {
+//       return res.status(400).json({ error: 'Invalid task_type' });
+//     }
+
+//     if (updateFields.title && !updateFields.title.trim()) {
+//       return res.status(400).json({ error: 'Title cannot be empty' });
+//     }
+
+//     // Build dynamic update query
+//     const fields = [];
+//     const values = [];
+//     let paramIndex = 1;
+
+//     Object.keys(updateFields).forEach(key => {
+//       if (updateFields[key] !== undefined) {
+//         fields.push(`${key} = $${paramIndex}`);
+//         values.push(updateFields[key]);
+//         paramIndex++;
+//       }
+//     });
+
+//     if (fields.length === 0) {
+//       return res.status(400).json({ error: 'No fields to update' });
+//     }
+
+//     fields.push(`updated_at = NOW()`);
+//     values.push(taskId, userId);
+
+//     const query = `
+//       UPDATE planner_tasks 
+//       SET ${fields.join(', ')} 
+//       WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}
+//       RETURNING *
+//     `;
+
+//     console.log('Executing query:', query);
+//     console.log('With values:', values);
+
+//     const result = await pool.query(query, values);
+    
+//     if (result.rows.length === 0) {
+//       return res.status(404).json({ error: 'Task not found after update' });
+//     }
+
+//     console.log('Update successful:', result.rows[0]);
+//     // Generate notification message
+//     const message = `✅ Task "${prev.title}" has been updated.`;
+
+
+
+
+//     const insertNotification = `
+//       INSERT INTO notification (user_id, message, date, time, notification_type)
+//       VALUES ($1, $2, CURRENT_DATE, CURRENT_TIME, $3)
+//       RETURNING *`;
+//     await pool.query(insertNotification, [userId, message, 'update']);
+
+//     res.json(result.rows[0]);
+//   } catch (error) {
+//     console.error('Error updating planner task:', error);
+//     console.error('Error details:', error.message);
+//     console.error('Error stack:', error.stack);
+//     res.status(500).json({ 
+//       error: 'Failed to update planner task',
+//       details: process.env.NODE_ENV === 'development' ? error.message : undefined
+//     });
+//   }
+// });
+
 router.put('/:taskId', authenticateToken, async (req, res) => {
   try {
     const userId = req.user.id;
     const { taskId } = req.params;
-    const updateFields = req.body;
+    const updateFields = { ...req.body };
 
     console.log('Update request received:', { taskId, updateFields });
 
@@ -188,81 +294,105 @@ router.put('/:taskId', authenticateToken, async (req, res) => {
     delete updateFields.user_id;
     delete updateFields.created_at;
 
-    // Validate ownership
-    const ownershipCheck = await pool.query(
-      'SELECT id FROM planner_tasks WHERE id = $1 AND user_id = $2',
-      [taskId, userId]
+    // Fetch the existing record
+    const {
+      rows: [prev]
+    } = await pool.query(
+      `SELECT title, priority, status, resource_id, resource_ids,
+              description, task_type, end_time, start_time
+       FROM planner_tasks
+       WHERE id = $1`,
+      [taskId]
     );
 
-    if (ownershipCheck.rows.length === 0) {
+    if (!prev) {
+      return res.status(404).json({ error: 'Task not found' });
+    }
+
+    // Validate ownership
+    const { rows: ownerRows } = await pool.query(
+      `SELECT id FROM planner_tasks WHERE id = $1 AND user_id = $2`,
+      [taskId, userId]
+    );
+    if (ownerRows.length === 0) {
       return res.status(404).json({ error: 'Task not found or access denied' });
     }
 
-    // Validate fields if they are present
-    if (updateFields.priority && !['low', 'medium', 'high'].includes(updateFields.priority)) {
+    // Field‐value validation
+    if (updateFields.priority && !['low','medium','high'].includes(updateFields.priority)) {
       return res.status(400).json({ error: 'Priority must be low, medium, or high' });
     }
-
-    if (updateFields.status && !['pending', 'in_progress', 'completed'].includes(updateFields.status)) {
+    if (updateFields.status && !['pending','in_progress','completed'].includes(updateFields.status)) {
       return res.status(400).json({ error: 'Status must be pending, in_progress, or completed' });
     }
-
-    if (updateFields.task_type && !['task', 'session', 'quiz', 'flashcard', 'study'].includes(updateFields.task_type)) {
+    if (updateFields.task_type && !['task','session','quiz','flashcard','study'].includes(updateFields.task_type)) {
       return res.status(400).json({ error: 'Invalid task_type' });
     }
-
-    if (updateFields.title && !updateFields.title.trim()) {
+    if (updateFields.title !== undefined && !updateFields.title.trim()) {
       return res.status(400).json({ error: 'Title cannot be empty' });
     }
 
-    // Build dynamic update query
+    // Build dynamic UPDATE
     const fields = [];
     const values = [];
-    let paramIndex = 1;
-
-    Object.keys(updateFields).forEach(key => {
-      if (updateFields[key] !== undefined) {
-        fields.push(`${key} = $${paramIndex}`);
-        values.push(updateFields[key]);
-        paramIndex++;
+    let idx = 1;
+    for (const [key, val] of Object.entries(updateFields)) {
+      if (val !== undefined) {
+        fields.push(`${key} = $${idx}`);
+        values.push(val);
+        idx++;
       }
-    });
-
+    }
     if (fields.length === 0) {
       return res.status(400).json({ error: 'No fields to update' });
     }
-
     fields.push(`updated_at = NOW()`);
+
+    // Add WHERE params
     values.push(taskId, userId);
 
     const query = `
-      UPDATE planner_tasks 
-      SET ${fields.join(', ')} 
-      WHERE id = $${paramIndex} AND user_id = $${paramIndex + 1}
+      UPDATE planner_tasks
+      SET ${fields.join(', ')}
+      WHERE id = $${idx} AND user_id = $${idx + 1}
       RETURNING *
     `;
-
     console.log('Executing query:', query);
     console.log('With values:', values);
 
-    const result = await pool.query(query, values);
-    
-    if (result.rows.length === 0) {
+    // Execute and get updated row
+    const { rows: updatedRows } = await pool.query(query, values);
+    if (updatedRows.length === 0) {
       return res.status(404).json({ error: 'Task not found after update' });
     }
+    const updated = updatedRows[0];
+    console.log('Update successful:', updated);
+    const message = `Task "${prev.title}" updated.`;
 
-    console.log('Update successful:', result.rows[0]);
-    res.json(result.rows[0]);
+    // Insert notification
+    const insertNotification = `
+      INSERT INTO notification (user_id, message, date, time, notification_type)
+      VALUES ($1, $2, CURRENT_DATE, CURRENT_TIME, $3)
+      RETURNING *
+    `;
+    await pool.query(insertNotification, [userId, message, 'update']);
+
+    // Return the updated task
+    res.status(201).json({
+      success: true,
+      message,
+      notification: updated
+    });
+
   } catch (error) {
     console.error('Error updating planner task:', error);
-    console.error('Error details:', error.message);
-    console.error('Error stack:', error.stack);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Failed to update planner task',
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
+
 
 // Delete planner task
 router.delete('/:taskId', authenticateToken, async (req, res) => {

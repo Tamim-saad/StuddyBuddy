@@ -1,6 +1,6 @@
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 require('dotenv').config();
-const { pipeline } = require('@xenova/transformers');
+// const { pipeline } = require('@xenova/transformers');
 const fetch = require('node-fetch'); 
 
 // Initialize Gemini client instead of OpenAI
@@ -88,6 +88,7 @@ const parseJSONResponse = (response) => {
 let embedder = null;
 const initializeEmbedder = async () => {
   if (!embedder) {
+    const { pipeline } = await import ('@xenova/transformers');
     embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2');
   }
   return embedder;

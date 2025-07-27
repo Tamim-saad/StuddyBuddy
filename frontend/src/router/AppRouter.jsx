@@ -14,6 +14,9 @@ import { StickynotesDisplay } from "../components/stickynotes/StickynotesDisplay
 import { SavedStickynotes } from "../components/stickynotes/SavedStickynotes";
 import { SavedQuiz } from "../components/quizz/SavedQuiz";
 import PlannerDashboard from "../components/planner/PlannerDashboard";
+import {Demo} from "../components/demowork/Demo";
+import { NotificationsList } from "../components/notifications/NotificationsList";
+
 
 const Layout = () => {
   return (

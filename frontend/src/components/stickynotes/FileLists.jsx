@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { Box, Typography, Button } from "@mui/material";
+import { Box, Typography, Button, TextField, InputAdornment, Slider, FormControl, FormLabel } from "@mui/material";
 import { CircularProgress } from "../../common/icons";
 import { SearchBar } from "../files/SearchBar";
 import { uploadService } from "../../services";
@@ -15,6 +15,14 @@ export const FileLists = () => {
   const [searchResults, setSearchResults] = useState(null);
   const [selectedFiles, setSelectedFiles] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [indexingFiles, setIndexingFiles] = useState(new Set());
+  const [generatedQuiz, setGeneratedQuiz] = useState(null);
+  const [noteCount,setNoteCount]=useState(5);
+
+  const handleNoteCountChange=(event)=>{
+    const value = Math.min(20, Math.max(1, parseInt(event.target.value) || 1));
+    setNoteCount(value);
+  }
 
   useEffect(() => {
     loadFiles();
@@ -105,20 +113,17 @@ export const FileLists = () => {
 
     try {
       setLoading(true);
-      const response = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/api/stickynotes/generate`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${accessToken}`,
-          },
-          body: JSON.stringify({
-            file_id: fileId,
-            noteCount: 3, // Reduced from 5 to 3 for cost efficiency
-          }),
-        }
-      );
+      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/stickynotes/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({
+          file_id: fileId,
+          noteCount: noteCount
+        })
+      });
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -227,18 +232,84 @@ export const FileLists = () => {
             onDeleteFile={handleDeleteFile} // Pass the delete handler
           />
 
-          {/* Generate Sticky Notes Button */}
-          <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-            <Button
-              variant="contained"
-              onClick={handleGenerateStickynotes}
-              disabled={!selectedFiles.length || loading}
-            >
-              {loading ? "Generating..." : "Generate Study Notes"}
-            </Button>
-          </Box>
+{selectedFiles.length > 0 && (
+                <Box sx={{ 
+                  mt: 4, 
+                  mb: 2, 
+                  p: 3, 
+                  borderRadius: 2, 
+                  backgroundColor: '#f9f9f9',
+                  maxWidth: '500px',
+                  mx: 'auto'
+                }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#4B0082' }}>
+                    Study Notes Options
+                  </Typography>
+                  
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <FormLabel sx={{ mb: 1, color: '#666' }}>
+                      Number of notes to generate (1-20)
+                    </FormLabel>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Slider
+                        value={noteCount}
+                        min={1}
+                        max={20}
+                        step={1}
+                        onChange={(e, newValue) => setNoteCount(newValue)}
+                        sx={{ 
+                          color: '#22c55e',
+                          '& .MuiSlider-thumb': {
+                            backgroundColor: '#16a34a',
+                          }
+                        }}
+                      />
+                      <TextField
+                        value={noteCount}
+                        onChange={handleNoteCountChange}
+                        type="number"
+                        variant="outlined"
+                        size="small"
+                        InputProps={{
+                          inputProps: { min: 1, max: 20 }
+                        }}
+                        sx={{ width: '80px' }}
+                      />
+                    </Box>
+                  </FormControl>
+                </Box>
+              )}
+
+              {/* Generate Sticky Notes Button */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
+                <Button
+                  onClick={handleGenerateStickynotes}
+                  disabled={!selectedFiles.length || loading}
+                  sx={{
+                    bgcolor: '#22c55e',
+                    color: 'white',
+                    px: 4,
+                    py: 1.5,
+                    fontSize: '1rem',
+                    fontWeight: 500,
+                    '&:hover': {
+                      bgcolor: '#16a34a',
+                    },
+                    '&.Mui-disabled': {
+                      bgcolor: '#22c55e', // Changed from #d1d5db to keep it green
+                      opacity: 0.7, // Added opacity to show disabled state
+                      color: 'white'  // Changed from rgba(255,255,255,0.8) to keep text fully white
+                    }
+                  }}
+                >
+                  {loading ? 'Generating...' : 'Generate Study Notes'}
+                </Button>
+
+              </Box>
+            </>
+          )}
         </>
-      )}
+      ) : null}
     </Box>
   );
 };

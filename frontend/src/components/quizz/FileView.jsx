@@ -10,8 +10,11 @@ import { MCQDisplay } from "./MCQDisplay";
 import { CQDisplay } from "./CQDisplay";
 import { Button } from "../ui/button";
 import PDFAnnotationViewer from "../PDFAnnotationViewer";
+import { ForumQuizDisplay } from '../forum/ForumQuizDisplay';
+import axios, { Axios } from 'axios';
 
 export const FileView = () => {
+  let share;
   const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -217,8 +220,24 @@ export const FileView = () => {
           <Typography variant="body2" sx={{ mb: 3, color: "gray" }}>
             Choose a file to generate questions from!
           </Typography>
-
-          <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 3 }}>
+          {sharedQuiz ? (<button
+                  onClick={shareQuiz}
+                  // disabled={!selectedFiles.length || loading}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#22c55e',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    // cursor: selectedFiles.length ? 'pointer' : 'not-allowed',
+                    opacity: selectedFiles.length ? 1 : 0.6,
+                    transition: 'all 0.3s'
+                  }}
+                >
+                  {/* {loading ? 'Generating...' : 'Generate CQ'} */}
+                  Share MCQ
+                </button>):(<></>)}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
             <SearchBar onSearch={handleSearch} />
           </Box>
 

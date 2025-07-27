@@ -121,9 +121,7 @@ const Sidebar = () => {
   ];
 
   const handleListItemClick = (route) => {
-    if (route === "notifications") {
-      navigate(`/project/${route}`);
-    } else {
+    if (route !== "notifications") {
       navigate(`/home/${route}`);
     }
   };
