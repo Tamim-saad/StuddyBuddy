@@ -103,6 +103,8 @@ const annotationRoutes = require("./routes/annotationRoutes");
 const quizRoutes = require('./routes/quizRoutes');
 const stickynotesRoutes = require('./routes/stickynotesRoutes');
 const plannerRoutes = require('./routes/plannerRoutes');
+const notificationRoutes=require('./routes/notificationRoutes')
+const ForumRoutes=require('./routes/ForumRoutes')
 
 // Mount routes
 
@@ -112,6 +114,8 @@ app.use("/api/annotations", annotationRoutes);
 app.use('/api/quiz', quizRoutes);
 app.use('/api/stickynotes', stickynotesRoutes);
 app.use('/api/planner', plannerRoutes);
+app.use('/api/notifications',notificationRoutes);
+app.use('/api/savedQuizForum',ForumRoutes)
 
 app.use("/auth", authRoutes);
 app.get("/", (req, res) => {

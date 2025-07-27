@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Box, Typography, Button } from '@mui/material';
+import { Box, Typography, Button, TextField, InputAdornment, Slider, FormControl, FormLabel } from '@mui/material';
 import { CircularProgress } from "../../common/icons";
 import { SearchBar } from '../files/SearchBar';
 import { uploadService } from '../../services';
 import { useNavigate } from 'react-router-dom';
 import { authServices } from '../../auth';
 import { FileList } from '../files/FileList';
+
 
 
 export const FileLists = () => {
@@ -17,6 +18,12 @@ export const FileLists = () => {
   const [loading, setLoading] = useState(false);
   const [indexingFiles, setIndexingFiles] = useState(new Set());
   const [generatedQuiz, setGeneratedQuiz] = useState(null);
+  const [noteCount,setNoteCount]=useState(5);
+
+  const handleNoteCountChange=(event)=>{
+    const value = Math.min(20, Math.max(1, parseInt(event.target.value) || 1));
+    setNoteCount(value);
+  }
 
   useEffect(() => {
     loadFiles();
@@ -124,7 +131,7 @@ export const FileLists = () => {
         },
         body: JSON.stringify({
           file_id: fileId,
-          noteCount: 5
+          noteCount: noteCount
         })
       });
 
@@ -186,6 +193,54 @@ export const FileLists = () => {
                 onStartIndexing={handleStartIndexing}
               />
 
+{selectedFiles.length > 0 && (
+                <Box sx={{ 
+                  mt: 4, 
+                  mb: 2, 
+                  p: 3, 
+                  borderRadius: 2, 
+                  backgroundColor: '#f9f9f9',
+                  maxWidth: '500px',
+                  mx: 'auto'
+                }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: '#4B0082' }}>
+                    Study Notes Options
+                  </Typography>
+                  
+                  <FormControl fullWidth sx={{ mb: 2 }}>
+                    <FormLabel sx={{ mb: 1, color: '#666' }}>
+                      Number of notes to generate (1-20)
+                    </FormLabel>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Slider
+                        value={noteCount}
+                        min={1}
+                        max={20}
+                        step={1}
+                        onChange={(e, newValue) => setNoteCount(newValue)}
+                        sx={{ 
+                          color: '#22c55e',
+                          '& .MuiSlider-thumb': {
+                            backgroundColor: '#16a34a',
+                          }
+                        }}
+                      />
+                      <TextField
+                        value={noteCount}
+                        onChange={handleNoteCountChange}
+                        type="number"
+                        variant="outlined"
+                        size="small"
+                        InputProps={{
+                          inputProps: { min: 1, max: 20 }
+                        }}
+                        sx={{ width: '80px' }}
+                      />
+                    </Box>
+                  </FormControl>
+                </Box>
+              )}
+
               {/* Generate Sticky Notes Button */}
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}>
                 <Button
@@ -210,6 +265,7 @@ export const FileLists = () => {
                 >
                   {loading ? 'Generating...' : 'Generate Study Notes'}
                 </Button>
+
               </Box>
             </>
           )}

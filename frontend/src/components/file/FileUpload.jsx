@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Typography, LinearProgress } from '@mui/material';
+import { Box, Typography, LinearProgress,Button } from '@mui/material';
 import { CircularProgress } from "../../common/icons";
 import { SearchBar } from '../files/SearchBar';
 import { FileList } from '../files/FileList';
@@ -234,6 +234,30 @@ export const FileUpload = () => {
       toast.error('Failed to delete file');
     }
   };
+  const handleDownloadClick = async (fileId) => {
+    try {
+      await uploadService.downloadFile(fileId);
+    }
+    catch (error) {
+      console.error('Download error:', error);
+      toast.error('Failed to download file');
+    };
+  }
+  const updateFile=async (fileId, updatedData) => {
+    try {
+      const updatedFile = await uploadService.updateFile(fileId, updatedData);
+      setFiles(prevFiles => 
+        prevFiles.map(file => 
+          file.id === fileId ? updatedFile : file
+        )
+      );
+      toast.success('File updated successfully');
+    } catch (error) {
+      console.error('Error updating file:', error);
+      toast.error('Failed to update file');
+    }
+  };
+
 
   // If annotating, show the annotation viewer instead of PDFAnnotator
   if (annotatingFile) {
@@ -258,7 +282,9 @@ export const FileUpload = () => {
       />
     );
   }
-  
+  const shareQuiz=()=>{
+
+  }
   const filteredFiles = searchResults || (files?.filter(file => {
     if (!file || !file.title) return false;
     return file.title.toLowerCase().includes(
@@ -333,6 +359,8 @@ export const FileUpload = () => {
           onAnnotate={handleAnnotate}
           onViewFile={handleViewFile}
           onDeleteFile={handleDeleteFile}
+          onDownloadFile={handleDownloadClick}
+          onUpdateFile={updateFile}
         />
       )}
     </Box>

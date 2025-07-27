@@ -14,6 +14,8 @@ import { StickynotesDisplay } from "../components/stickynotes/StickynotesDisplay
 import { SavedStickynotes } from "../components/stickynotes/SavedStickynotes";
 import { SavedQuiz } from "../components/quizz/SavedQuiz";
 import PlannerDashboard from "../components/planner/PlannerDashboard";
+import {Demo} from "../components/demowork/Demo";
+
 
 
 const Layout = () => {
@@ -91,9 +93,14 @@ export const router = createBrowserRouter([
         element: <SavedQuiz />,
       },
       {
-        path: "planner",
-        element: <PlannerDashboard />,
-      }
+        path:"demo",
+        element:<Demo/>
+      },
+      {
+        path:"planner",
+        element:<PlannerDashboard/>
+
+      },
     ],
   },
 ]);

@@ -71,7 +71,7 @@ export const plannerService = {
   },
 
   // Update planner task
-  updateTask: async (taskId, updates) => {
+  updateTask: async (taskId, updates, setMessage) => {
     try {
       const token = authServices.getAccessToken();
       
@@ -88,8 +88,10 @@ export const plannerService = {
           'Content-Type': 'application/json'
         }
       });
+      console.log('Response from backend:', response.data);
 
-      return response.data;
+      setMessage(response.data.message);
+      return response.data.notification;
     } catch (error) {
       console.error('Error updating planner task:', error);
       

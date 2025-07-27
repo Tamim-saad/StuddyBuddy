@@ -334,35 +334,8 @@ const TaskModal = ({ open, task, onClose, onSave }) => {
           </Grid>
 
           {/* Tags */}
-          <Grid item xs={12}>
-            <Box className="mb-2">
-              <Autocomplete
-                freeSolo
-                options={[]}
-                value={tagInput}
-                onInputChange={(event, newInputValue) => {
-                  setTagInput(newInputValue);
-                }}
-                onChange={(event, newValue) => {
-                  if (newValue) {
-                    handleTagAdd(newValue);
-                  }
-                }}
-                onKeyPress={(event) => {
-                  if (event.key === 'Enter' && tagInput.trim()) {
-                    event.preventDefault();
-                    handleTagAdd(tagInput.trim());
-                  }
-                }}
-                renderInput={(params) => (
-                  <TextField
-                    {...params}
-                    label="Add Tags"
-                    placeholder="Type and press Enter to add tags"
-                  />
-                )}
-              />
-            </Box>
+          
+            
             <Box className="flex flex-wrap gap-1">
               {formData.tags.map((tag, index) => (
                 <Chip
@@ -375,7 +348,7 @@ const TaskModal = ({ open, task, onClose, onSave }) => {
                 />
               ))}
             </Box>
-          </Grid>
+          
 
           {/* Resource Links - Multiple Files */}
           <Grid item xs={12}>

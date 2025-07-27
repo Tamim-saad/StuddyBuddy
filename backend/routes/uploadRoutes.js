@@ -9,6 +9,7 @@ const fs = require('fs').promises;
 const pdf = require('pdf-parse');
 const { generateEmbeddings, generateSummary } = require('../utils/AI');
 const { storeDocumentChunks } = require('../utils/qdrantClient');
+const { type } = require('os');
 
 // Initialize PostgreSQL connection
 const pool = new Pool({
@@ -188,6 +189,28 @@ router.post('/:id/index', authenticateToken, async (req, res) => {
     res.status(500).json({ error: 'Indexing failed' });
   }
 });
+router.put('/update/:id', authenticateToken, async (req, res) => {
+  try {
+    console.log('Update request body:', req.body);
+    const {title}= req.body;
+    console.log('Title to update:', title);
+    const result= await pool.query(
+      `UPDATE chotha 
+       SET title = $1 
+       WHERE id = $2 AND user_id = $3
+       RETURNING *`,
+      [ title,req.params.id, req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found or unauthorized' });
+    }
+    console.log(result);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Update error:', error);
+    res.status(500).json({ error: 'Could not update file' });
+  }
+});
 
 // Delete file route
 router.delete('/:id', authenticateToken, async (req, res) => {
@@ -205,6 +228,31 @@ router.delete('/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Delete error:', error);
     res.status(500).json({ error: 'Could not delete file' });
+  }
+});
+router.get('/download/:id', authenticateToken, async (req, res) => {
+  try {
+    const result= await pool.query(
+      `SELECT file_path,title,type 
+       FROM chotha WHERE id = $1 AND user_id = $2`,
+      [req.params.id, req.user.id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found or unauthorized' });
+    }
+    const file = result.rows[0];
+    const filePath = path.resolve(file.file_path);
+    console.log('File to download:', file);
+    const fileName = file.title || path.basename(filePath);
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(fileName)}"`);
+    res.setHeader('Content-Type', file.type || 'application/octet-stream');
+
+    const fileStream = fsSync.createReadStream(filePath);
+    fileStream.pipe(res);
+    
+  } catch (error) {
+    console.error('Download error:', error);
+    res.status(500).json({ error: 'Could not Download file' });
   }
 });
 

@@ -79,5 +79,43 @@ export const uploadService = {
       throw new Error('File search failed');
     }
     return response.data;
+  },
+
+  async downloadFile(id) {
+    const accessToken = authServices.getAccessToken();
+    const response = await axios.get(`${API_BASE_URL}/api/uploads/download/${id}`, {
+      responseType: 'blob', // Important for file download
+      headers: {
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    console.log("Download response:", response);
+
+    if (response.status !== 200) {
+      throw new Error('File download failed');
+    }
+
+    // // Create a link element to trigger the download
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `file_${id}.pdf`); // Set the file name
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  }
+,
+async updateFile(id, fileData) {
+    const accessToken = authServices.getAccessToken();
+    const response = await axios.put(`${API_BASE_URL}/api/uploads/update/${id}`, fileData, {
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${accessToken}`
+      }
+    });
+    if (response.status !== 200) {
+      throw new Error('File update failed');
+    }
+    return response.data;
   }
 };

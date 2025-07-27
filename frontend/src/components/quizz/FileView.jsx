@@ -8,8 +8,11 @@ import { useNavigate } from 'react-router-dom';
 import { authServices } from '../../auth';
 import { MCQDisplay } from './MCQDisplay';
 import { CQDisplay } from './CQDisplay';
+import { ForumQuizDisplay } from '../forum/ForumQuizDisplay';
+import axios, { Axios } from 'axios';
 
 export const FileView = () => {
+  let share;
   const navigate = useNavigate();
   const [files, setFiles] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -18,6 +21,7 @@ export const FileView = () => {
   const [loading, setLoading] = useState(false);
   const [indexingFiles, setIndexingFiles] = useState(new Set());
   const [generatedQuiz, setGeneratedQuiz] = useState(null);
+  const [sharedQuiz,setSharedQuiz]=useState(null);
 
   useEffect(() => {
     loadFiles();
@@ -136,12 +140,15 @@ export const FileView = () => {
 
       const data = await response.json();
       console.log('Quiz generated:', data.quiz);
+      share=data;
+      console.log("Inside quiz",share);
+      setSharedQuiz(data);
       
-      if (type === 'mcq') {
-        navigate('/home/quiz/mcq-display', { state: { quiz: data.quiz } });
-      } else if (type === 'cq') {
-        navigate('/home/quiz/cq-display', { state: { quiz: data.quiz } });
-      }
+      // if (type === 'mcq') {
+      //   navigate('/home/quiz/mcq-display', { state: { quiz: data.quiz } });
+      // } else if (type === 'cq') {
+      //   navigate('/home/quiz/cq-display', { state: { quiz: data.quiz } });
+      // }
       
     } catch (error) {
       console.error('Quiz generation error:', error);
@@ -150,6 +157,35 @@ export const FileView = () => {
       setLoading(false);
     }
   };
+  const shareQuiz=async()=>{
+    // 
+    console.log("Get",sharedQuiz);
+    const accessToken=authServices.getAccessToken();
+    
+    // navigate('/home/forum', { state: { quiz: sharedQuiz.quiz } });
+        const response = await axios.post(
+          `${process.env.REACT_APP_BASE_URL}/api/savedQuizForum`,
+          {
+            shared_quiz:sharedQuiz.quiz 
+          },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${accessToken}`
+            }
+          }
+        );
+
+
+    // navigate('/home/forum/mcq-display', { state: { quiz: sharedQuiz.quiz } ,
+    //   sharedQuiz:{sharedQuiz}
+    // })
+    // <ForumQuizDisplay 
+    // sharedQuiz={sharedQuiz}
+    // />
+
+
+  }
 
   return (
     <Box sx={{ p: 10, margin: 6 }}>
@@ -161,7 +197,23 @@ export const FileView = () => {
           <Typography variant="body2" sx={{ mb: 3, color: 'gray' }}>
             Choose a file to generate questions from!
           </Typography>
-
+          {sharedQuiz ? (<button
+                  onClick={shareQuiz}
+                  // disabled={!selectedFiles.length || loading}
+                  style={{
+                    padding: '10px 20px',
+                    backgroundColor: '#22c55e',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    // cursor: selectedFiles.length ? 'pointer' : 'not-allowed',
+                    opacity: selectedFiles.length ? 1 : 0.6,
+                    transition: 'all 0.3s'
+                  }}
+                >
+                  {/* {loading ? 'Generating...' : 'Generate CQ'} */}
+                  Share MCQ
+                </button>):(<></>)}
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
             <SearchBar onSearch={handleSearch} />
           </Box>
