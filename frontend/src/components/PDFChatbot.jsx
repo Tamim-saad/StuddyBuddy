@@ -52,6 +52,7 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
     scrollToBottom();
   }, [messages]);
 
+
   // Generate PDF summary
   const generateSummary = async () => {
     setIsGeneratingSummary(true);
@@ -114,11 +115,13 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
       if (!response.ok) throw new Error('Failed to generate quiz');
       
       const data = await response.json();
-      setCurrentQuiz({
-        ...data,
+      const quizData = {
+        type: data.type || 'mcq',
+        questions: data.questions || [],
         file_id: fileId,
         title: `Quiz for ${fileName}`
-      });
+      };
+      setCurrentQuiz(quizData);
       setQuizDialogOpen(true);
     } catch (error) {
       console.error('Quiz generation error:', error);
@@ -443,12 +446,14 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
           </Box>
         </DialogTitle>
         <DialogContent sx={{ p: 1, overflow: 'auto', height: '70vh' }}>
-          {currentQuiz && (
+          {currentQuiz ? (
             <MCQDisplay 
               quiz={currentQuiz}
               embedded={true}
               onClose={() => setQuizDialogOpen(false)}
             />
+          ) : (
+            <div>No quiz data available</div>
           )}
         </DialogContent>
       </Dialog>
@@ -472,7 +477,7 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
           </Box>
         </DialogTitle>
         <DialogContent sx={{ p: 1, overflow: 'auto', height: '70vh' }}>
-          {currentStickynotes && (
+          {currentStickynotes ? (
             <StickynotesDisplay 
               stickynotes={currentStickynotes}
               fileId={fileId}
@@ -480,6 +485,8 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
               embedded={true}
               onClose={() => setStickyDialogOpen(false)}
             />
+          ) : (
+            <div>No sticky notes data available</div>
           )}
         </DialogContent>
       </Dialog>

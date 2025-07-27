@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Typography, 
@@ -6,8 +6,7 @@ import {
   RadioGroup, 
   FormControlLabel, 
   Button, 
-  Paper,
-  CircularProgress
+  Paper
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SaveIcon from '@mui/icons-material/Save';
@@ -98,6 +97,17 @@ export const MCQDisplay = ({ quiz: propQuiz, embedded = false, onClose }) => {
     return (
       <Box sx={{ p: 3 }}>
         <Typography color="error">No quiz data found</Typography>
+        <Button onClick={handleBack} sx={{ mt: 2, color: '#22c55e' }}>
+          Back to Quiz Selection
+        </Button>
+      </Box>
+    );
+  }
+
+  if (!quiz.questions || quiz.questions.length === 0) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error">No questions found in this quiz</Typography>
         <Button onClick={handleBack} sx={{ mt: 2, color: '#22c55e' }}>
           Back to Quiz Selection
         </Button>
