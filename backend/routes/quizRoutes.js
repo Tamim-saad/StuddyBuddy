@@ -227,6 +227,142 @@ router.get('/file/:file_id', authenticateToken, async (req, res) => {
   }
 });
 
+// Get saved quizzes for the authenticated user
+router.get('/saved', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { page = 1, limit = 10, type } = req.query;
+    const offset = (page - 1) * limit;
+
+    let whereClause = '';
+    let queryParams = [limit, offset];
+    
+    if (type && (type === 'mcq' || type === 'cq')) {
+      whereClause = 'WHERE q.type = $3';
+      queryParams.push(type);
+    }
+
+    const savedQuizzesQuery = `
+      SELECT 
+        q.id,
+        q.file_id,
+        q.title,
+        q.type,
+        q.priority,
+        q.questions,
+        q.created_at,
+        c.title as file_title,
+        qm.score
+      FROM quiz q
+      LEFT JOIN chotha c ON q.file_id = c.id
+      LEFT JOIN quiz_marks qm ON q.id = qm.quiz_id AND qm.student_id = $${queryParams.length + 1}
+      ${whereClause}
+      ORDER BY q.created_at DESC
+      LIMIT $1 OFFSET $2
+    `;
+    
+    queryParams.push(userId);
+    
+    const result = await pool.query(savedQuizzesQuery, queryParams);
+    
+    // Get total count for pagination
+    const countQuery = `
+      SELECT COUNT(*) as total 
+      FROM quiz q 
+      ${whereClause}
+    `;
+    
+    const countParams = type && (type === 'mcq' || type === 'cq') ? [type] : [];
+    const countResult = await pool.query(countQuery, countParams);
+    const totalCount = parseInt(countResult.rows[0].total);
+
+    const quizzes = result.rows.map(row => ({
+      id: row.id,
+      file_id: row.file_id,
+      title: row.title,
+      type: row.type,
+      priority: row.priority,
+      questions: row.questions,
+      created_at: row.created_at,
+      file_title: row.file_title,
+      score: row.score,
+      question_count: row.questions ? row.questions.length : 0
+    }));
+
+    res.json({
+      success: true,
+      data: {
+        quizzes,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: totalCount,
+          pages: Math.ceil(totalCount / limit)
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching saved quizzes:', error);
+    res.status(500).json({ error: 'Failed to fetch saved quizzes' });
+  }
+});
+
+// Get a specific saved quiz by ID
+router.get('/saved/:id', authenticateToken, async (req, res) => {
+  try {
+    const quizId = parseInt(req.params.id);
+    const userId = req.user.id;
+
+    if (isNaN(quizId)) {
+      return res.status(400).json({ error: 'Invalid quiz ID' });
+    }
+
+    const quizQuery = `
+      SELECT 
+        q.id,
+        q.file_id,
+        q.title,
+        q.type,
+        q.priority,
+        q.questions,
+        q.created_at,
+        c.title as file_title,
+        qm.score
+      FROM quiz q
+      LEFT JOIN chotha c ON q.file_id = c.id
+      LEFT JOIN quiz_marks qm ON q.id = qm.quiz_id AND qm.student_id = $2
+      WHERE q.id = $1
+    `;
+    
+    const result = await pool.query(quizQuery, [quizId, userId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Quiz not found' });
+    }
+
+    const quiz = result.rows[0];
+    
+    res.json({
+      success: true,
+      data: {
+        id: quiz.id,
+        file_id: quiz.file_id,
+        title: quiz.title,
+        type: quiz.type,
+        priority: quiz.priority,
+        questions: quiz.questions,
+        created_at: quiz.created_at,
+        file_title: quiz.file_title,
+        score: quiz.score,
+        question_count: quiz.questions ? quiz.questions.length : 0
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching quiz:', error);
+    res.status(500).json({ error: 'Failed to fetch quiz' });
+  }
+});
+
 // Get a specific quiz by ID
 router.get('/:quizId', authenticateToken, async (req, res) => {
   try {
@@ -373,142 +509,6 @@ router.post('/save', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error saving quiz:', error);
     res.status(500).json({ error: 'Failed to save quiz results' });
-  }
-});
-
-// Get saved quizzes for the authenticated user
-router.get('/saved', authenticateToken, async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { page = 1, limit = 10, type } = req.query;
-    const offset = (page - 1) * limit;
-
-    let whereClause = '';
-    let queryParams = [limit, offset];
-    
-    if (type && (type === 'mcq' || type === 'cq')) {
-      whereClause = 'WHERE q.type = $3';
-      queryParams.push(type);
-    }
-
-    const savedQuizzesQuery = `
-      SELECT 
-        q.id,
-        q.file_id,
-        q.title,
-        q.type,
-        q.priority,
-        q.questions,
-        q.created_at,
-        c.title as file_title,
-        qm.score
-      FROM quiz q
-      LEFT JOIN chotha c ON q.file_id = c.id
-      LEFT JOIN quiz_marks qm ON q.id = qm.quiz_id AND qm.student_id = $${queryParams.length + 1}
-      ${whereClause}
-      ORDER BY q.created_at DESC
-      LIMIT $1 OFFSET $2
-    `;
-    
-    queryParams.push(userId);
-    
-    const result = await pool.query(savedQuizzesQuery, queryParams);
-    
-    // Get total count for pagination
-    const countQuery = `
-      SELECT COUNT(*) as total 
-      FROM quiz q 
-      ${whereClause}
-    `;
-    
-    const countParams = type && (type === 'mcq' || type === 'cq') ? [type] : [];
-    const countResult = await pool.query(countQuery, countParams);
-    const totalCount = parseInt(countResult.rows[0].total);
-
-    const quizzes = result.rows.map(row => ({
-      id: row.id,
-      file_id: row.file_id,
-      title: row.title,
-      type: row.type,
-      priority: row.priority,
-      questions: row.questions,
-      created_at: row.created_at,
-      file_title: row.file_title,
-      score: row.score,
-      question_count: row.questions ? row.questions.length : 0
-    }));
-
-    res.json({
-      success: true,
-      data: {
-        quizzes,
-        pagination: {
-          page: parseInt(page),
-          limit: parseInt(limit),
-          total: totalCount,
-          pages: Math.ceil(totalCount / limit)
-        }
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching saved quizzes:', error);
-    res.status(500).json({ error: 'Failed to fetch saved quizzes' });
-  }
-});
-
-// Get a specific saved quiz by ID
-router.get('/saved/:id', authenticateToken, async (req, res) => {
-  try {
-    const quizId = parseInt(req.params.id);
-    const userId = req.user.id;
-
-    if (isNaN(quizId)) {
-      return res.status(400).json({ error: 'Invalid quiz ID' });
-    }
-
-    const quizQuery = `
-      SELECT 
-        q.id,
-        q.file_id,
-        q.title,
-        q.type,
-        q.priority,
-        q.questions,
-        q.created_at,
-        c.title as file_title,
-        qm.score
-      FROM quiz q
-      LEFT JOIN chotha c ON q.file_id = c.id
-      LEFT JOIN quiz_marks qm ON q.id = qm.quiz_id AND qm.student_id = $2
-      WHERE q.id = $1
-    `;
-    
-    const result = await pool.query(quizQuery, [quizId, userId]);
-    
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Quiz not found' });
-    }
-
-    const quiz = result.rows[0];
-    
-    res.json({
-      success: true,
-      data: {
-        id: quiz.id,
-        file_id: quiz.file_id,
-        title: quiz.title,
-        type: quiz.type,
-        priority: quiz.priority,
-        questions: quiz.questions,
-        created_at: quiz.created_at,
-        file_title: quiz.file_title,
-        score: quiz.score,
-        question_count: quiz.questions ? quiz.questions.length : 0
-      }
-    });
-  } catch (error) {
-    console.error('Error fetching quiz:', error);
-    res.status(500).json({ error: 'Failed to fetch quiz' });
   }
 });
 

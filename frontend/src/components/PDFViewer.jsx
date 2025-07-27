@@ -4,6 +4,7 @@ import { annotationService } from "../services/annotationService";
 import FallbackPDFViewer from "./FallbackPDFViewer";
 import PDFAnnotationViewer from "./PDFAnnotationViewer";
 import PDFChatbot from "./PDFChatbot";
+import { usePomodoroTimer } from "../context/PomodoroContext";
 import "./PDFViewer.css";
 
 const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
@@ -14,7 +15,11 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [useFallback, setUseFallback] = useState(false);
   const [useAnnotationViewer, setUseAnnotationViewer] = useState(false);
   const [initAttempted, setInitAttempted] = useState(false);
+  const [showPomodoro, setShowPomodoro] = useState(false);
   const containerId = `pdf-viewer-container-${Math.random().toString(36).substr(2, 9)}`;
+  
+  // Pomodoro timer context
+  const pomodoroContext = usePomodoroTimer();
 
   // Cleanup function
   const cleanupViewer = useCallback(async () => {
@@ -194,6 +199,21 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
         <h3>PDF Viewer - {fileName}</h3>
         <div className="viewer-controls">
           <button 
+            onClick={() => setShowPomodoro(!showPomodoro)} 
+            className="pomodoro-btn"
+            style={{
+              background: pomodoroContext.hasActiveTimer ? '#dc3545' : '#17a2b8',
+              color: 'white',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '4px',
+              margin: '0 0.5rem',
+              cursor: 'pointer'
+            }}
+          >
+            ⏰ {pomodoroContext.hasActiveTimer ? pomodoroContext.formatTime(pomodoroContext.timeRemaining) : 'Timer'}
+          </button>
+          <button 
             onClick={() => setUseAnnotationViewer(true)} 
             className="annotation-btn"
             style={{
@@ -228,6 +248,141 @@ const PDFViewer = ({ fileId, filePath, onClose, fileName }) => {
           </button>
         </div>
       </div>
+      
+      {/* Pomodoro Timer Panel */}
+      {showPomodoro && (
+        <div style={{
+          position: 'absolute',
+          top: '60px',
+          right: '20px',
+          zIndex: 15,
+          background: 'white',
+          border: '1px solid #e5e7eb',
+          borderRadius: '8px',
+          boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+          padding: '1rem',
+          minWidth: '300px',
+          maxWidth: '400px'
+        }}>
+          <div style={{
+            background: 'linear-gradient(135deg, #fef2f2 0%, #fef3c7 100%)',
+            border: '1px solid #fecaca',
+            borderRadius: '6px',
+            padding: '1rem'
+          }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <span style={{ fontSize: '1.25rem' }}>⏰</span>
+                <h3 style={{ margin: 0, fontWeight: '600', color: '#374151' }}>Pomodoro Timer</h3>
+              </div>
+              <button
+                onClick={() => setShowPomodoro(false)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  color: '#6b7280'
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            {pomodoroContext.hasActiveTimer ? (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{
+                  fontSize: '2rem',
+                  fontFamily: 'monospace',
+                  fontWeight: 'bold',
+                  color: '#dc2626',
+                  marginBottom: '0.75rem'
+                }}>
+                  {pomodoroContext.formatTime(pomodoroContext.timeRemaining)}
+                </div>
+                <div style={{
+                  width: '100%',
+                  background: '#e5e7eb',
+                  borderRadius: '9999px',
+                  height: '8px',
+                  marginBottom: '1rem'
+                }}>
+                  <div 
+                    style={{
+                      background: '#dc2626',
+                      height: '8px',
+                      borderRadius: '9999px',
+                      transition: 'width 1s ease',
+                      width: `${pomodoroContext.getProgress()}%`
+                    }}
+                  ></div>
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '0.5rem' }}>
+                  {pomodoroContext.isRunning ? (
+                    <button
+                      onClick={pomodoroContext.pauseTimer}
+                      style={{
+                        background: 'white',
+                        border: '1px solid #2563eb',
+                        color: '#2563eb',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      Pause
+                    </button>
+                  ) : (
+                    <button
+                      onClick={pomodoroContext.resumeTimer}
+                      style={{
+                        background: 'white',
+                        border: '1px solid #059669',
+                        color: '#059669',
+                        padding: '0.5rem 1rem',
+                        borderRadius: '4px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem'
+                      }}
+                    >
+                      Resume
+                    </button>
+                  )}
+                  <button
+                    onClick={pomodoroContext.stopTimer}
+                    style={{
+                      background: 'white',
+                      border: '1px solid #dc2626',
+                      color: '#dc2626',
+                      padding: '0.5rem 1rem',
+                      borderRadius: '4px',
+                      cursor: 'pointer',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    Stop
+                  </button>
+                </div>
+                {pomodoroContext.activeTask && (
+                  <div style={{ marginTop: '0.75rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                    Working on: {pomodoroContext.activeTask.title}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ color: '#6b7280', marginBottom: '1rem' }}>
+                  No active timer. Start a Pomodoro session from your task list.
+                </div>
+                <div style={{ fontSize: '0.875rem', color: '#9ca3af' }}>
+                  The timer will appear here when you start a Pomodoro session for any task.
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
       {/* Error overlay */}
       {error && (

@@ -18,12 +18,14 @@ import {
   Plus,
   RotateCw,
   TextCursor,
+  Timer,
 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Toaster } from "./ui/toaster";
 import { annotationService } from "../services/annotationService";
 import { toast } from "../lib/toast";
 import PDFChatbot from "./PDFChatbot";
+import { usePomodoroTimer } from "../context/PomodoroContext";
 
 const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [viewerState, setViewerState] = useState("loading");
@@ -47,6 +49,10 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
   const [highlightColor] = useState("#ffff0080");
   const [canvasSize, setCanvasSize] = useState({ width: 800, height: 600 });
   const [savedAnnotations, setSavedAnnotations] = useState({}); // Store all pages annotations
+  const [showPomodoro, setShowPomodoro] = useState(false);
+
+  // Pomodoro timer context
+  const pomodoroContext = usePomodoroTimer();
 
   const pdfUrl = annotationService.getPDFUrl(filePath);
   console.log("PDF URL:", pdfUrl);
@@ -947,6 +953,26 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
 
             {/* PDF and Annotation Canvas */}
             <div className="flex-1 overflow-auto bg-gray-50 flex justify-center items-start p-4">
+              {/* Floating Pomodoro Timer Button */}
+              <div className="fixed top-32 right-4 z-50">
+                <Button
+                  onClick={() => setShowPomodoro(!showPomodoro)}
+                  variant={pomodoroContext.hasActiveTimer ? "destructive" : "outline"}
+                  size="lg"
+                  className={`shadow-lg hover:shadow-xl transition-all duration-300 ${
+                    pomodoroContext.hasActiveTimer 
+                      ? "bg-red-600 hover:bg-red-700 text-white animate-pulse" 
+                      : "bg-white hover:bg-gray-50"
+                  }`}
+                  title="Pomodoro Timer"
+                >
+                  <Timer size="20" className="mr-2" />
+                  {pomodoroContext.hasActiveTimer 
+                    ? pomodoroContext.formatTime(pomodoroContext.timeRemaining) 
+                    : "Timer"}
+                </Button>
+              </div>
+              
               <div className="relative">
                 {/* PDF Canvas */}
                 <canvas
@@ -1131,6 +1157,83 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
                 </Stage>
               </div>
             </div>
+            
+            {/* Floating Pomodoro Timer Panel */}
+            {showPomodoro && (
+              <div className="fixed top-36 right-4 z-50 bg-white border border-gray-200 rounded-lg shadow-xl p-4 min-w-80">
+                <div className="bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <Timer className="text-red-600" size="20" />
+                      <h3 className="font-semibold text-gray-800">Pomodoro Timer</h3>
+                    </div>
+                    <button
+                      onClick={() => setShowPomodoro(false)}
+                      className="text-gray-500 hover:text-gray-700 text-xl"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                  
+                  {pomodoroContext.hasActiveTimer ? (
+                    <div className="text-center">
+                      <div className="text-3xl font-mono font-bold text-red-600 mb-3">
+                        {pomodoroContext.formatTime(pomodoroContext.timeRemaining)}
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+                        <div 
+                          className="bg-red-600 h-2 rounded-full transition-all duration-1000"
+                          style={{ width: `${pomodoroContext.getProgress()}%` }}
+                        ></div>
+                      </div>
+                      <div className="flex justify-center gap-2">
+                        {pomodoroContext.isRunning ? (
+                          <Button
+                            onClick={pomodoroContext.pauseTimer}
+                            variant="outline"
+                            size="sm"
+                            className="border-blue-600 text-blue-600 hover:bg-blue-50"
+                          >
+                            Pause
+                          </Button>
+                        ) : (
+                          <Button
+                            onClick={pomodoroContext.resumeTimer}
+                            variant="outline"
+                            size="sm"
+                            className="border-green-600 text-green-600 hover:bg-green-50"
+                          >
+                            Resume
+                          </Button>
+                        )}
+                        <Button
+                          onClick={pomodoroContext.stopTimer}
+                          variant="outline"
+                          size="sm"
+                          className="border-red-600 text-red-600 hover:bg-red-50"
+                        >
+                          Stop
+                        </Button>
+                      </div>
+                      {pomodoroContext.activeTask && (
+                        <div className="mt-3 text-sm text-gray-600">
+                          Working on: {pomodoroContext.activeTask.title}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center">
+                      <div className="text-gray-600 mb-4">
+                        No active timer. Start a Pomodoro session from your task list.
+                      </div>
+                      <div className="text-sm text-gray-500">
+                        The timer will appear here when you start a Pomodoro session for any task.
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         );
 

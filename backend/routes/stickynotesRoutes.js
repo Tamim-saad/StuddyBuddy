@@ -89,6 +89,36 @@ router.get('/file/:fileId', authenticateToken, async (req, res) => {
   }
 });
 
+// Get all sticky notes for the authenticated user across all files
+router.get('/user/all', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const result = await pool.query(
+      `SELECT 
+        s.id, 
+        s.file_id, 
+        s.front, 
+        s.back, 
+        s.tags, 
+        s.importance, 
+        s.title, 
+        s.created_at,
+        c.title as file_title
+       FROM stickynotes s
+       JOIN chotha c ON s.file_id = c.id
+       WHERE c.user_id = $1 
+       ORDER BY s.created_at DESC`,
+      [userId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching user sticky notes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Save sticky notes
 router.post('/save', authenticateToken, async (req, res) => {
   try {

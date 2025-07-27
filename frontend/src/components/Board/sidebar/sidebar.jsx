@@ -50,7 +50,7 @@ const Sidebar = () => {
     {
       text: "Dashboard",
       icon: <LayoutDashboard size={24} color="#fffbeb" />,
-      route: "dashboards",
+      route: "dashboard",
     },
     {
       text: "Uploads",
