@@ -111,8 +111,18 @@ function generateUpdateMessage(title, task_type, priority, status, previous) {
 // Mark a notification as read
 router.put("/:id/read", authenticateToken, async (req, res) => {
   try {
-    const notification_id = req.params.id;
+    const notification_id = parseInt(req.params.id);
     const user_id = req.user.id;
+    
+    console.log(`Attempting to mark notification ${notification_id} as read for user ${user_id}`);
+    
+    // Validate notification_id is a valid number
+    if (isNaN(notification_id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid notification ID'
+      });
+    }
     
     // Update notification
     const update = `
@@ -123,26 +133,43 @@ router.put("/:id/read", authenticateToken, async (req, res) => {
       
     const result = await pool.query(update, [notification_id, user_id]);
     
+    console.log(`Query result: ${result.rows.length} rows affected`);
+    
     if (result.rows.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: 'Notification not found'
-      });
+      // Check if notification exists at all
+      const checkExists = await pool.query('SELECT id, user_id FROM notification WHERE id = $1', [notification_id]);
+      if (checkExists.rows.length === 0) {
+        console.log(`Notification ${notification_id} does not exist`);
+        return res.status(404).json({
+          success: false,
+          error: 'Notification not found'
+        });
+      } else {
+        console.log(`Notification ${notification_id} exists but belongs to user ${checkExists.rows[0].user_id}, not ${user_id}`);
+        return res.status(403).json({
+          success: false,
+          error: 'Notification not found or access denied'
+        });
+      }
     }
     
+    console.log(`Successfully marked notification ${notification_id} as read`);
     res.json({
       success: true,
       notification: result.rows[0]
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to mark notification as read' });
+    console.error('Error in mark as read:', error);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ error: 'Failed to mark notification as read', details: error.message });
   }
 });
 
 router.put("/read-all", authenticateToken, async (req, res) => {
   try {
     const user_id = req.user.id;
+    
+    console.log(`Attempting to mark all notifications as read for user ${user_id}`);
     
     // Update all notifications for the user
     const update = `
@@ -153,13 +180,17 @@ router.put("/read-all", authenticateToken, async (req, res) => {
       
     const result = await pool.query(update, [user_id]);
     
+    console.log(`Marked ${result.rowCount} notifications as read for user ${user_id}`);
+    
     res.json({
       success: true,
-      count: result.rowCount
+      count: result.rowCount,
+      notifications: result.rows
     });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+    console.error('Error in mark all as read:', error);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ error: 'Failed to mark all notifications as read', details: error.message });
   }
 });
 
