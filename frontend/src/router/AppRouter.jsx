@@ -15,6 +15,7 @@ import { SavedStickynotes } from "../components/stickynotes/SavedStickynotes";
 import { SavedQuiz } from "../components/quizz/SavedQuiz";
 import PlannerDashboard from "../components/planner/PlannerDashboard";
 import {Demo} from "../components/demowork/Demo";
+import { NotificationsList } from "../components/notifications/NotificationsList";
 
 
 
@@ -101,6 +102,10 @@ export const router = createBrowserRouter([
         element:<PlannerDashboard/>
 
       },
+      {
+        path: "notifications",
+        element:<NotificationsList />,
+      }
     ],
   },
 ]);

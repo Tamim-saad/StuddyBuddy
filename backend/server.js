@@ -2,6 +2,7 @@ const app = require("./app");
 const { connectDB } = require("./config/db");
 const { initializeCollection } = require('./utils/qdrantClient');
 
+
 const PORT = process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== "test") {

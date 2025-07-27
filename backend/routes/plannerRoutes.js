@@ -367,7 +367,7 @@ router.put('/:taskId', authenticateToken, async (req, res) => {
     }
     const updated = updatedRows[0];
     console.log('Update successful:', updated);
-    const message = `✅ Task "${prev.title}" updated.`;
+    const message = `Task "${prev.title}" updated.`;
 
     // Insert notification
     const insertNotification = `

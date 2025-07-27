@@ -4,6 +4,29 @@ const { Pool } = require('pg');
 const { authenticateToken } = require('../middleware/authMiddleware');
 const pool = new Pool({ connectionString: process.env.POSTGRES_URI });
 
+// GET all notifications for a user
+router.get("/", authenticateToken, async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    
+    const query = `
+      SELECT * FROM notification 
+      WHERE user_id = $1 AND read = false
+      ORDER BY date DESC, time DESC
+      LIMIT 50`;
+      
+    const result = await pool.query(query, [user_id]);
+    
+    res.json({
+      success: true,
+      notifications: result.rows
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
+
 // POST notification (create/update)
 router.post("/", authenticateToken, async (req, res) => {
   try {
@@ -65,7 +88,7 @@ router.post("/", authenticateToken, async (req, res) => {
 // Create message for new tasks
 function generateCreateMessage(title, task_type, priority) {
   console.log(`Creating notification for new task: ${title}`);  
-  return `✅ New task "${title}" has been created as "${task_type}" with priority "${priority}".`;
+  return `New task "${title}" has been created as "${task_type}" with priority "${priority}".`;
 }
 
 // Detailed update message generator
@@ -85,7 +108,62 @@ function generateUpdateMessage(title, task_type, priority, status, previous, att
     changes.push(`attached files updated`);
   }
 
-  return `🔄 The ${task_type || 'item'} "${title}" was updated: ${changes.join(', ')}.`;
+  return `The ${task_type || 'item'} "${title}" was updated: ${changes.join(', ')}.`;
 }
+// Mark a notification as read
+router.put("/:id/read", authenticateToken, async (req, res) => {
+  try {
+    const notification_id = req.params.id;
+    const user_id = req.user.id;
+    
+    // Update notification
+    const update = `
+      UPDATE notification
+      SET read = true
+      WHERE id = $1 AND user_id = $2
+      RETURNING *`;
+      
+    const result = await pool.query(update, [notification_id, user_id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'Notification not found'
+      });
+    }
+    
+    res.json({
+      success: true,
+      notification: result.rows[0]
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+router.put("/read-all", authenticateToken, async (req, res) => {
+  try {
+    const user_id = req.user.id;
+    
+    // Update all notifications for the user
+    const update = `
+      UPDATE notification
+      SET read = true
+      WHERE user_id = $1 AND read = false
+      RETURNING *`;
+      
+    const result = await pool.query(update, [user_id]);
+    
+    res.json({
+      success: true,
+      count: result.rowCount
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
+});
+
 
 module.exports = router;

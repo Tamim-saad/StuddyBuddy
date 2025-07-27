@@ -1,252 +1,118 @@
-import React, {
-  createContext,
-  useContext,
-  useState,
-  useEffect,
-  useMemo,
-} from "react";
-import { authServices } from "../auth";
-import propTypes from "prop-types";
+// src/context/NotificationContext.jsx
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { notificationService } from '../services/notificationService';
+import debounce from 'lodash/debounce';
+
 const NotificationContext = createContext();
 
 export const NotificationProvider = ({ children }) => {
-  const currentUser = authServices.getAuthUser();
   const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [unreadCount, setUnreadCount] = useState(0);
-  const fetchNotifications = async () => {
+  const [loading, setLoading] = useState(true); // Start with true
+  const [error, setError] = useState(null);
+  const [initialized, setInitialized] = useState(false);
+
+  // Debounced fetch function
+  const debouncedFetch = useCallback(
+    debounce(async () => {
+      if (!initialized) return;
+      
+      try {
+        const data = await notificationService.getNotifications();
+        setNotifications(data.notifications || []);
+        setUnreadCount(data.notifications.filter(n => !n.read).length);
+      } catch (err) {
+        console.error('Failed to fetch notifications:', err);
+        setError('Failed to load notifications');
+      }
+    }, 1000),
+    [initialized]
+  );
+
+  // Initial fetch
+  const initialFetch = async () => {
+    setLoading(true);
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/api/notifications/user/${currentUser._id}`
-      );
-      if (!response.ok) throw new Error("Failed to fetch notifications");
-      const data = await response.json();
-      setNotifications(data);
-      const unreadCount =
-        data.notifications?.filter(
-          (notification) =>
-            !notification.read.some((r) => r.userId === currentUser?._id)
-        ).length || 0;
-      setUnreadCount(unreadCount);
-    } catch (error) {
-      console.error("Error fetching notifications:", error);
+      const data = await notificationService.getNotifications();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.notifications.filter(n => !n.read).length);
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+      setError('Failed to load notifications');
     } finally {
       setLoading(false);
+      setInitialized(true);
     }
   };
 
-  // Fetch notifications periodically
   useEffect(() => {
-    if (currentUser?._id) {
-      fetchNotifications();
-      const interval = setInterval(fetchNotifications, 30000); // Every 30 seconds
-      return () => clearInterval(interval);
-    }
-  }, [currentUser?._id]);
+    initialFetch();
+    
+    // Set up polling with the debounced fetch
+    const interval = setInterval(debouncedFetch, 30000);
+    return () => {
+      clearInterval(interval);
+      debouncedFetch.cancel();
+    };
+  }, [debouncedFetch]);
 
   const markAsRead = async (notificationId) => {
     try {
-      const response = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/api/notifications/${notificationId}/read`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ userId: currentUser._id }),
-        }
+      await notificationService.markAsRead(notificationId);
+      setNotifications(prev => 
+        prev.map(notification => 
+          notification.id === notificationId 
+            ? { ...notification, read: true } 
+            : notification
+        )
       );
-      if (!response.ok) throw new Error("Failed to mark notification as read");
-      await fetchNotifications(); // Refresh notifications
-    } catch (error) {
-      console.error("Error marking notification as read:", error);
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (err) {
+      console.error('Failed to mark notification as read:', err);
     }
   };
+
   const markAllAsRead = async () => {
     try {
-      if (!currentUser?._id) return;
-
-      const response = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/api/notifications/mark-all-read`,
-        {
-          method: "PUT",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ userId: currentUser._id }),
-        }
+      await notificationService.markAllAsRead();
+      setNotifications(prev => 
+        prev.map(notification => ({ ...notification, read: true }))
       );
-
-      if (!response.ok) {
-        throw new Error("Failed to mark all notifications as read");
-      }
-
-      // Update notifications state properly
-      setNotifications((prev) => ({
-        ...prev,
-        notifications: prev.notifications.map((notification) => ({
-          ...notification,
-          read: [
-            ...notification.read,
-            { userId: currentUser._id, readAt: new Date() },
-          ],
-        })),
-      }));
-
       setUnreadCount(0);
-    } catch (error) {
-      console.error("Error marking all as read:", error);
-    }
-  };
-  const removeNotification = async (notificationId) => {
-    try {
-      if (!currentUser?._id) return;
-
-      const response = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/api/notifications/${notificationId}`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ userId: currentUser._id }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to remove notification");
-      }
-
-      // Update local state by removing the notification for current user only
-      setNotifications((prev) => ({
-        ...prev,
-        notifications: prev.notifications.filter(
-          (n) => n._id !== notificationId
-        ),
-      }));
-
-      // Update unread count if needed
-      const wasUnread = notifications?.notifications?.find(
-        (n) =>
-          n._id === notificationId &&
-          !n.read.some((r) => r.userId === currentUser?._id)
-      );
-      if (wasUnread) {
-        setUnreadCount((prev) => Math.max(0, prev - 1));
-      }
-    } catch (error) {
-      console.error("Error removing notification:", error);
+    } catch (err) {
+      console.error('Failed to mark all notifications as read:', err);
     }
   };
 
-  const clearAllNotifications = async () => {
-    try {
-      if (!currentUser?._id) return;
-
-      const response = await fetch(
-        `${process.env.REACT_APP_BASE_URL}/api/notifications/clear-all`,
-        {
-          method: "DELETE",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ userId: currentUser._id }),
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error("Failed to clear all notifications");
-      }
-
-      // Reset notifications state for current user
-      setNotifications({
-        ...notifications,
-        notifications: [],
-      });
-      setUnreadCount(0);
-
-      // Fetch fresh notifications in case there are new ones
-      await fetchNotifications();
-    } catch (error) {
-      console.error("Error clearing notifications:", error);
+  const addNotification = useCallback((notification) => {
+    setNotifications(prev => [notification, ...prev]);
+    if (!notification.read) {
+      setUnreadCount(prev => prev + 1);
     }
+  }, []);
+
+  const value = {
+    notifications,
+    unreadCount,
+    loading,
+    error,
+    initialized,
+    markAsRead,
+    markAllAsRead,
+    addNotification
   };
-
-  // Add this after fetchNotifications function
-  const addNotification = async (notification) => {
-    try {
-      if (!currentUser?._id) return;
-
-      const response = await fetch(`${process.env.REACT_APP_BASE_URL}/api/notifications`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...notification,
-          userId: currentUser._id,
-          timestamp: new Date().toISOString(),
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to add notification");
-      }
-
-      // Refresh notifications to get the new one
-      await fetchNotifications();
-    } catch (error) {
-      console.error("Error adding notification:", error);
-    }
-  };
-
-  // Update your useEffect to calculate unreadCount
-  useEffect(() => {
-    if (notifications?.notifications?.length > 0) {
-      const count = notifications.notifications.filter(
-        (notification) =>
-          !notification.read.some((r) => r.userId === currentUser?._id)
-      ).length;
-      setUnreadCount(count);
-    } else {
-      setUnreadCount(0);
-    }
-  }, [notifications, currentUser?._id]);
 
   return (
-    <NotificationContext.Provider
-      value={useMemo(
-        () => ({
-          notifications,
-          unreadCount,
-          loading,
-          addNotification,
-          markAsRead,
-          markAllAsRead,
-          removeNotification,
-          clearAllNotifications,
-          refreshNotifications: fetchNotifications,
-        }),
-        [
-          notifications,
-          unreadCount,
-          loading,
-          addNotification,
-          markAsRead,
-          markAllAsRead,
-          removeNotification,
-          clearAllNotifications,
-          fetchNotifications,
-        ]
-      )}
-    >
+    <NotificationContext.Provider value={value}>
       {children}
     </NotificationContext.Provider>
   );
 };
 
-export const useNotifications = () => useContext(NotificationContext);
-
-NotificationProvider.propTypes = {
-  children: propTypes.node.isRequired,
+export const useNotifications = () => {
+  const context = useContext(NotificationContext);
+  if (context === undefined) {
+    throw new Error('useNotifications must be used within a NotificationProvider');
+  }
+  return context;
 };

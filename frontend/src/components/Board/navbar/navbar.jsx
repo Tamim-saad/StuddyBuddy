@@ -14,7 +14,7 @@ import { TaskColoumn, TaskCreate } from "../../kanbanboard/task";
 import { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import { useMembers } from "../../../context/MembersContext";
-import { NotificationBell } from "../../notification/NotificationBell";
+import { NotificationBell } from "../../notifications/NotificationBell";
 import { authServices } from "../../../auth";
 import { useNotifications } from "../../../context/NotificationContext";
 const TopNavbar = () => {

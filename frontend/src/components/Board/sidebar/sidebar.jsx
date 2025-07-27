@@ -24,6 +24,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import { amber } from "@mui/material/colors";
 import React, { useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
+import { NotificationBell } from "../../notifications/NotificationBell";
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -119,15 +120,13 @@ const Sidebar = () => {
     },
     {
       text: "Notifications",
-      icon: <NotificationsIcon sx={{ fontSize: "1.5rem", color: amber[50] }} />,
+      icon: <NotificationBell sx={{ fontSize: "1.5rem", color: amber[50] }} />,
       route: "notifications",
     },
   ];
 
   const handleListItemClick = (route) => {
-    if (route === "notifications") {
-      navigate(`/project/${route}`);
-    } else {
+    if (route !== "notifications") {
       navigate(`/home/${route}`);
     }
   };
