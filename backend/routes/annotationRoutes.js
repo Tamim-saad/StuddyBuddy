@@ -100,14 +100,15 @@ router.get('/:fileId', async (req, res) => {
         });
       } else {
         console.log('📝 No annotations found for file:', fileId);
-        res.status(404).json({ 
-          success: false, 
+        // Return 200 instead of 404 for better UX
+        res.json({ 
+          success: true, 
           message: 'No annotations found',
           annotations: {}
         });
       }
     } catch (error) {
-      // File doesn't exist yet, return empty annotations
+      // File doesn't exist yet, return empty annotations with 200 status
       console.log('📁 Annotations file not found, returning empty');
       res.json({
         success: true,

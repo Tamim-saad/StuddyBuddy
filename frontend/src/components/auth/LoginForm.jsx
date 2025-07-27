@@ -12,6 +12,7 @@ import { authServices } from "../../auth";
 import { GoogleLogin } from "@react-oauth/google";
 import { jwtDecode } from "jwt-decode";
 import CircularProgress from '@mui/material/CircularProgress';
+import { toast } from "../../lib/toast";
 
 export const LoginForm = ({ onSuccess }) => {
   const navigate = useNavigate();
@@ -46,10 +47,6 @@ export const LoginForm = ({ onSuccess }) => {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
     if (error) setError('');
-  };
-
-  const togglePasswordVisibility = () => {
-    setShowPassword(!showPassword);
   };
 
   const validateForm = () => {
@@ -97,7 +94,7 @@ export const LoginForm = ({ onSuccess }) => {
       })
       .catch((err) => {
         setError(err.response?.data?.message || "Failed to login");
-        alert("Failed to login");
+        toast.error("Failed to login");
       })
       .finally(() => setLoading(false));
   };
@@ -121,11 +118,11 @@ export const LoginForm = ({ onSuccess }) => {
       await authServices.loginWithGoogle(googlePayload);
 
       // Navigate after successful login
-      if (projectIdFromQuery) {
-        navigate(`/kanbanBoard/projects/${projectIdFromQuery}`);
-      } else {
-        navigate("/kanbanBoard");
+       if (projectIdFromQuery) {
+      //   navigate(`/kanbanBoard/projects/${projectIdFromQuery}`);
+      // } else {
       }
+      navigate("/home/uploads");
 
       setSuccess("Google login successful!");
     } catch (err) {
@@ -221,12 +218,9 @@ export const LoginForm = ({ onSuccess }) => {
             {/* Replace the static button with Google OAuth button */}
             <div className="flex justify-center">
               <GoogleLogin
-                clientId={process.env.REACT_APP_GOOGLE_CLIENT_ID}
-                redirectUri={process.env.REACT_APP_FRONTEND_URL}
                 onSuccess={handleGoogleLoginSuccess}
                 onError={handleGoogleLoginError}
                 useOneTap
-                type="standard"
                 theme="outline"
                 size="large"
                 text="signin_with"

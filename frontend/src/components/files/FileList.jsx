@@ -187,7 +187,7 @@ export const FileList = ({
                 </TableCell>
                 <TableCell>
                   {/* PDF Annotation Button */}
-                  {file.type === 'application/pdf' && (
+                  {/* {file.type === 'application/pdf' && (
                     <Tooltip title="Annotate PDF">
                       <IconButton
                         onClick={() => onAnnotate && onAnnotate(file)}
@@ -197,7 +197,7 @@ export const FileList = ({
                         <EditIcon />
                       </IconButton>
                     </Tooltip>
-                  )}
+                  )} */}
 
                   {/* View File Button */}
                   <Tooltip title="View File">

@@ -81,40 +81,86 @@ export const uploadService = {
     return response.data;
   },
 
-  async downloadFile(id) {
+  async generateQuiz(type, fileId, options = {}) {
     const accessToken = authServices.getAccessToken();
-    const response = await axios.get(`${API_BASE_URL}/api/uploads/download/${id}`, {
-      responseType: 'blob', // Important for file download
-      headers: {
-        'Authorization': `Bearer ${accessToken}`
+    const response = await axios.post(
+      `${API_BASE_URL}/api/quiz/generate/${type}`,
+      {
+        file_id: fileId,
+        questionCount: options.questionCount || 5,
+        title: options.title || 'Generated Quiz',
+        priority: options.priority || 0
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
       }
-    });
-    console.log("Download response:", response);
-
+    );
+    
     if (response.status !== 200) {
-      throw new Error('File download failed');
+      throw new Error('Quiz generation failed');
     }
+    return response.data;
+  },
 
-    // // Create a link element to trigger the download
-    const url = window.URL.createObjectURL(new Blob([response.data]));
-    const link = document.createElement('a');
-    link.href = url;
-    link.setAttribute('download', `file_${id}.pdf`); // Set the file name
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-,
-async updateFile(id, fileData) {
+  async saveQuiz(quizData) {
     const accessToken = authServices.getAccessToken();
-    const response = await axios.put(`${API_BASE_URL}/api/uploads/update/${id}`, fileData, {
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${accessToken}`
+    const response = await axios.post(
+      `${API_BASE_URL}/api/quiz/save`,
+      quizData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
       }
-    });
+    );
+    
     if (response.status !== 200) {
-      throw new Error('File update failed');
+      throw new Error('Quiz saving failed');
+    }
+    return response.data;
+  },
+
+  async generateStickyNotes(fileId, options = {}) {
+    const accessToken = authServices.getAccessToken();
+    const response = await axios.post(
+      `${API_BASE_URL}/api/stickynotes/generate`,
+      {
+        file_id: fileId,
+        noteCount: options.noteCount || 5
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+    
+    if (response.status !== 200) {
+      throw new Error('Sticky notes generation failed');
+    }
+    return response.data;
+  },
+
+  async saveStickyNotes(notesData) {
+    const accessToken = authServices.getAccessToken();
+    const response = await axios.post(
+      `${API_BASE_URL}/api/stickynotes/save`,
+      notesData,
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${accessToken}`
+        }
+      }
+    );
+    
+    if (response.status !== 200) {
+      throw new Error('Sticky notes saving failed');
     }
     return response.data;
   }

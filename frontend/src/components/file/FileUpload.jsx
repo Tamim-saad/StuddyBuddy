@@ -101,12 +101,14 @@ export const FileUpload = () => {
       await new Promise(resolve => setTimeout(resolve, completionDelay));
 
       // Update files list with new file
-      if (response?.data) {
-        setFiles(prevFiles => {
-          const newFile = response.data;
-          return Array.isArray(prevFiles) ? [newFile, ...prevFiles] : [newFile];
-        });
-      }
+      // if (response?.data) {
+      //   setFiles(prevFiles => {
+      //     const newFile = response.data;
+      //     return Array.isArray(prevFiles) ? [newFile, ...prevFiles] : [newFile];
+      //   });
+      // }
+
+      await loadFiles(); // Reload files to include the new upload
 
     } catch (error) {
       console.error('Upload error:', error);
@@ -198,10 +200,6 @@ export const FileUpload = () => {
     }
   }, []);
 
-  // Annotation handlers
-  const handleAnnotate = (file) => {
-    setAnnotatingFile(file);
-  };
 
   const handleAnnotatorClose = () => {
     setAnnotatingFile(null);
@@ -356,7 +354,6 @@ export const FileUpload = () => {
             );
           }}
           onStartIndexing={handleStartIndexing}
-          onAnnotate={handleAnnotate}
           onViewFile={handleViewFile}
           onDeleteFile={handleDeleteFile}
           onDownloadFile={handleDownloadClick}

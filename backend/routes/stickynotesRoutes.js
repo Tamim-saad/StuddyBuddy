@@ -12,7 +12,7 @@ const pool = new Pool({
 // Generate sticky notes from a file
 router.post('/generate', authenticateToken, async (req, res) => {
   try {
-    let { file_id, noteCount = 5 } = req.body;
+    let { file_id, noteCount = 3 } = req.body;
     
     // Validate input
     if (!file_id) {
@@ -53,12 +53,14 @@ router.post('/generate', authenticateToken, async (req, res) => {
       file_id
     });
 
-    // Return generated notes without saving
+    // Return generated notes WITHOUT saving to database
+    // Notes will only be saved when user explicitly clicks "Save"
     res.json({
       success: true,
       stickynotes: generatedNotes.notes,
       title: generatedNotes.title,
-      file_id: file_id  // Include file_id for later saving
+      file_id: file_id,
+      saved: false // Notes are not saved automatically
     });
 
   } catch (error) {
@@ -87,6 +89,36 @@ router.get('/file/:fileId', authenticateToken, async (req, res) => {
   }
 });
 
+// Get all sticky notes for the authenticated user across all files
+router.get('/user/all', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    
+    const result = await pool.query(
+      `SELECT 
+        s.id, 
+        s.file_id, 
+        s.front, 
+        s.back, 
+        s.tags, 
+        s.importance, 
+        s.title, 
+        s.created_at,
+        c.title as file_title
+       FROM stickynotes s
+       JOIN chotha c ON s.file_id = c.id
+       WHERE c.user_id = $1 
+       ORDER BY s.created_at DESC`,
+      [userId]
+    );
+
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error fetching user sticky notes:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Save sticky notes
 router.post('/save', authenticateToken, async (req, res) => {
   try {
@@ -99,6 +131,9 @@ router.post('/save', authenticateToken, async (req, res) => {
     // Insert notes to database
     const insertedNotes = [];
     for (const note of notes) {
+      // Ensure tags is an array and handle it properly for PostgreSQL
+      const tags = Array.isArray(note.tags) ? note.tags : [];
+      
       const result = await pool.query(
         `INSERT INTO stickynotes (
           file_id, 
@@ -110,11 +145,12 @@ router.post('/save', authenticateToken, async (req, res) => {
           created_at
         ) VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
         RETURNING *`,
-        [file_id, note.front, note.back, note.tags, note.importance, title]
+        [file_id, note.front, note.back, tags, note.importance, title]
       );
       insertedNotes.push(result.rows[0]);
     }
 
+    console.log(`Sticky notes saved to database: ${insertedNotes.length} notes`);
     res.json({
       success: true,
       stickynotes: insertedNotes

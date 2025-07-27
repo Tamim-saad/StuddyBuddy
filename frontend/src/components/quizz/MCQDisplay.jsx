@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Box, 
   Typography, 
@@ -6,8 +6,7 @@ import {
   RadioGroup, 
   FormControlLabel, 
   Button, 
-  Paper,
-  CircularProgress
+  Paper
 } from '@mui/material';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SaveIcon from '@mui/icons-material/Save';
@@ -15,10 +14,10 @@ import CheckIcon from '@mui/icons-material/Check';
 import { green } from '@mui/material/colors';
 import { authServices } from '../../auth';
 
-export const MCQDisplay = () => {
+export const MCQDisplay = ({ quiz: propQuiz, embedded = false, onClose }) => {
   const location = useLocation();
   const navigate = useNavigate();
-  const quiz = location.state?.quiz;
+  const quiz = propQuiz || location.state?.quiz;
 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -54,7 +53,11 @@ export const MCQDisplay = () => {
   };
 
   const handleBack = () => {
-    navigate('/home/quiz');  // Updated path
+    if (embedded && onClose) {
+      onClose();
+    } else {
+      navigate('/home/quiz');  // Updated path
+    }
   };
 
   const handleSave = async () => {
@@ -101,10 +104,21 @@ export const MCQDisplay = () => {
     );
   }
 
+  if (!quiz.questions || quiz.questions.length === 0) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography color="error">No questions found in this quiz</Typography>
+        <Button onClick={handleBack} sx={{ mt: 2, color: '#22c55e' }}>
+          Back to Quiz Selection
+        </Button>
+      </Box>
+    );
+  }
+
   const currentMCQ = quiz.questions[currentQuestion];
 
   return (
-    <Box sx={{ maxWidth: 800, mx: 'auto', p: 3 }}>
+    <Box sx={{ maxWidth: 800, mx: 'auto', p: embedded ? 2 : 3 }}>
       {!showResults ? (
         <Paper elevation={3} sx={{ p: 4, borderRadius: 2 }}>
           <Typography variant="h6" sx={{ mb: 3, color: '#1e40af' }}>

@@ -1,8 +1,8 @@
-const openai = require('../config/openaiClient');
+const gemini = require('../config/geminiClient');
 
 const generateStickyNotes = async (text, options = {}) => {
   const {
-    noteCount = 5,
+    noteCount = 3, // Reduced from 5 to 3 for cost efficiency
     title = 'Untitled Notes',
     file_id,
   } = options;
@@ -12,10 +12,18 @@ const generateStickyNotes = async (text, options = {}) => {
       throw new Error('Invalid text input');
     }
 
+    // Check if Gemini client is available
+    if (!gemini) {
+      throw new Error('Gemini client not configured. Please set GEMINI_API_KEY in environment variables.');
+    }
+
     const prompt = `
-Generate ${noteCount} flashcards/sticky notes based on the following text.
-Also suggest a concise but descriptive title for this set of notes (max 200 characters).
+Generate ${noteCount} concise flashcards/sticky notes based on the following text.
+Also suggest a concise but descriptive title for this set of notes (max 100 characters).
 Each note should capture key concepts, definitions, or important points.
+
+IMPORTANT: Return ONLY a valid JSON object without any markdown formatting or code blocks.
+Do not wrap the response in triple backticks with json or any other formatting.
 
 Format your response as a valid JSON object in this exact structure:
 {
@@ -31,16 +39,11 @@ Format your response as a valid JSON object in this exact structure:
 }
 
 Text to generate notes from:
-${text.substring(0, 3000)}
+${text.substring(0, 2000)}
     `;
 
-    const completion = await openai.chat.completions.create({
-      model: "gpt-4",
-      messages: [{ role: "user", content: prompt }],
-      temperature: 0.7,
-    });
-
-    const response = completion.choices[0].message.content.trim();
+    const result = await gemini.generateContent(prompt);
+    const response = result.response.text().trim();
     const parsedResponse = JSON.parse(response);
     
     if (!parsedResponse.notes || !Array.isArray(parsedResponse.notes)) {
