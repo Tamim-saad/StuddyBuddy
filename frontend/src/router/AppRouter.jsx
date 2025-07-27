@@ -8,13 +8,12 @@ import propTypes from "prop-types";
 import { FileUpload } from "../components/file/FileUpload";
 import { FileView } from "../components/quizz/FileView";
 import { MCQDisplay } from "../components/quizz/MCQDisplay";
-import { CQDisplay } from '../components/quizz/CQDisplay';
+import { CQDisplay } from "../components/quizz/CQDisplay";
 import { FileLists } from "../components/stickynotes/FileLists";
 import { StickynotesDisplay } from "../components/stickynotes/StickynotesDisplay";
 import { SavedStickynotes } from "../components/stickynotes/SavedStickynotes";
 import { SavedQuiz } from "../components/quizz/SavedQuiz";
-import { PlannerDashboard } from "../components/planner";
-
+import PlannerDashboard from "../components/planner/PlannerDashboard";
 
 const Layout = () => {
   return (
@@ -45,6 +44,10 @@ export const router = createBrowserRouter([
     element: <Layout />,
     children: [
       {
+        path: "planner",
+        element: <PlannerDashboard />,
+      },
+      {
         path: "dashboard",
         element: <Dashboard />,
       },
@@ -71,7 +74,6 @@ export const router = createBrowserRouter([
             path: "cq-display",
             element: <CQDisplay />,
           },
-
         ],
       },
       {
@@ -90,10 +92,6 @@ export const router = createBrowserRouter([
         path: "saved-quiz",
         element: <SavedQuiz />,
       },
-      {
-        path: "planner",
-        element: <PlannerDashboard />,
-      }
     ],
   },
 ]);

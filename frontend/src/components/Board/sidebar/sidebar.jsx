@@ -98,11 +98,11 @@ const Sidebar = () => {
       icon: <CalendarDays size={24} color="#fffbeb" />,
       route: "planner",
     },
-    {
-      text: "Forum",
-      icon: <MessageCircle size={24} color="#fffbeb" />,
-      route: "forum",
-    },
+    // {
+    //   text: "Forum",
+    //   icon: <MessageCircle size={24} color="#fffbeb" />,
+    //   route: "forum",
+    // },
     {
       text: "Feedback",
       icon: <FilePenLine size={24} color="#fffbeb" />, // Changed to FilePenLine for feedback

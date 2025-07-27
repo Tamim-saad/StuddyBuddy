@@ -24,6 +24,7 @@ import { Button } from "./ui/button";
 import { Toaster } from "./ui/toaster";
 import { annotationService } from "../services/annotationService";
 import { toast } from "../lib/toast";
+import PDFChatbot from "./PDFChatbot";
 import { usePomodoroTimer } from "../context/PomodoroContext";
 
 const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
@@ -1316,6 +1317,13 @@ const PDFAnnotationViewer = ({ fileId, filePath, onClose, fileName }) => {
       
       {/* Toast notifications */}
       <Toaster />
+      
+      {/* PDF Chatbot */}
+      <PDFChatbot 
+        fileId={fileId} 
+        filePath={filePath} 
+        fileName={fileName} 
+      />
     </div>
   );
 };

@@ -18,18 +18,21 @@ import CheckIcon from '@mui/icons-material/Check';
 import { amber, green, blue } from '@mui/material/colors';
 import { authServices } from '../../auth';
 
-export const StickynotesDisplay = () => {
+export const StickynotesDisplay = ({ 
+  stickynotes: propStickynotes, 
+  fileId: propFileId, 
+  title: propTitle, 
+  embedded = false, 
+  onClose 
+}) => {
   const location = useLocation();
   const navigate = useNavigate();
   const [flippedCards, setFlippedCards] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  console.log('Location state:', location.state);
-  const stickynotes = location.state?.stickynotes || [];
-  const fileId = location.state?.file_id;
-  const title = location.state?.title || 'Study Notes';
-  console.log('Sticky notes id:', fileId);
-  console.log('Sticky notes title:', title);
+  const stickynotes = propStickynotes || location.state?.stickynotes || [];
+  const fileId = propFileId || location.state?.file_id;
+  const title = propTitle || location.state?.title || 'Study Notes';
 
   const handleFlip = (index) => {
     setFlippedCards(prev => ({
@@ -39,6 +42,7 @@ export const StickynotesDisplay = () => {
   };
 
   const getImportanceColor = (importance) => {
+    if (!importance) return green[500];
     switch (importance.toLowerCase()) {
       case 'high':
         return amber[700];
@@ -113,18 +117,24 @@ export const StickynotesDisplay = () => {
           No sticky notes found
         </Typography>
         <Button
-          onClick={() => navigate('/home/file-list')}
+          onClick={() => {
+            if (embedded && onClose) {
+              onClose();
+            } else {
+              navigate('/home/file-list');
+            }
+          }}
           startIcon={<ArrowBackIcon />}
           sx={{ mt: 4, p: 2 }}
         >
-          Back to Files
+          {embedded ? 'Close' : 'Back to Files'}
         </Button>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ p: 10, mx: 8 }}>
+    <Box sx={{ p: embedded ? 2 : 10, mx: embedded ? 2 : 8 }}>
       <Box sx={{
         display: 'flex',
         alignItems: 'center',
@@ -135,13 +145,19 @@ export const StickynotesDisplay = () => {
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <IconButton
-            onClick={() => navigate('/home/stickynotes')}
+            onClick={() => {
+              if (embedded && onClose) {
+                onClose();
+              } else {
+                navigate('/home/stickynotes');
+              }
+            }}
             sx={{ mr: 4 }}
           >
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h5" sx={{ color: '#1e40af' }}>
-            {stickynotes[0]?.title || 'Study Notes'}
+            {title || 'Study Notes'}
           </Typography>
         </Box>
 
@@ -225,7 +241,7 @@ export const StickynotesDisplay = () => {
               </CardContent>
               <CardActions sx={{ p: 3, justifyContent: 'space-between' }}>
                 <Chip
-                  label={note.importance}
+                  label={note.importance || 'medium'}
                   size="small"
                   sx={{
                     bgcolor: getImportanceColor(note.importance),

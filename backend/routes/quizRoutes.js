@@ -541,4 +541,247 @@ router.delete('/saved/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Generate PDF summary
+router.post('/generate-summary', authenticateToken, async (req, res) => {
+  try {
+    const { file_id } = req.body;
+    
+    if (!file_id) {
+      return res.status(400).json({ error: 'file_id is required' });
+    }
+
+    // Get file information
+    const fileResult = await pool.query(
+      'SELECT * FROM chotha WHERE id = $1',
+      [file_id]
+    );
+
+    if (fileResult.rows.length === 0) {
+      return res.status(404).json({ error: 'File not found' });
+    }
+
+    // Get text chunks with error handling
+    let chunks;
+    try {
+      chunks = await client.scroll('document_chunks', {
+        filter: {
+          must: [
+            { key: 'file_id', match: { value: parseInt(file_id) } }
+          ]
+        },
+        limit: 1000
+      });
+    } catch (qdrantError) {
+      console.error('Qdrant error:', qdrantError);
+      return res.status(500).json({ error: 'Failed to fetch document content' });
+    }
+
+    if (!chunks || !chunks.points || chunks.points.length === 0) {
+      return res.status(404).json({ error: 'No content found for this file' });
+    }
+
+    // Combine chunks
+    const textContent = chunks.points.map(chunk => chunk.payload.text).join(' ');
+    
+    if (!gemini) {
+      return res.status(503).json({ error: 'AI service not available' });
+    }
+
+    // Generate summary using Gemini
+    const prompt = `Please provide a comprehensive summary of the following document content. Include the main topics, key points, and important details:\n\n${textContent.substring(0, 8000)}`;
+    
+    const result = await gemini.generateContent(prompt);
+    const summary = result.response.text();
+
+    res.json({
+      success: true,
+      summary: summary
+    });
+
+  } catch (error) {
+    console.error('Error generating summary:', error);
+    res.status(500).json({ error: 'Failed to generate summary' });
+  }
+});
+
+// Chat with PDF content
+router.post('/chat', authenticateToken, async (req, res) => {
+  try {
+    const { file_id, message } = req.body;
+    
+    if (!file_id || !message) {
+      return res.status(400).json({ error: 'file_id and message are required' });
+    }
+
+    // Check if AI service is available
+    if (!gemini) {
+      return res.status(503).json({ 
+        error: 'AI service not available. Please check GEMINI_API_KEY configuration.',
+        details: 'The Gemini API key is not properly configured on the server.'
+      });
+    }
+
+    // Check if Qdrant client is available
+    if (!client) {
+      return res.status(503).json({ 
+        error: 'Vector database not available',
+        details: 'The document search service is currently unavailable.'
+      });
+    }
+
+    // Get text chunks with better error handling
+    let chunks;
+    try {
+      chunks = await client.scroll('document_chunks', {
+        filter: {
+          must: [
+            { key: 'file_id', match: { value: parseInt(file_id) } }
+          ]
+        },
+        limit: 1000
+      });
+    } catch (qdrantError) {
+      console.error('Qdrant error:', qdrantError);
+      return res.status(503).json({ 
+        error: 'Document search service error',
+        details: 'Failed to retrieve document content from the database.'
+      });
+    }
+
+    if (!chunks || !chunks.points || chunks.points.length === 0) {
+      return res.status(404).json({ 
+        error: 'No content found for this file',
+        details: 'This document may not have been processed yet or the file ID is invalid.'
+      });
+    }
+
+    // Combine chunks
+    const textContent = chunks.points.map(chunk => chunk.payload.text).join(' ');
+    
+    if (!textContent.trim()) {
+      return res.status(404).json({ 
+        error: 'Document content is empty',
+        details: 'The document appears to have no extractable text content.'
+      });
+    }
+
+    try {
+      // Generate response using Gemini
+      const prompt = `You are a helpful assistant that answers questions about the provided document. Here is the document content:\n\n${textContent.substring(0, 6000)}\n\nUser question: ${message}\n\nPlease provide a helpful and accurate answer based on the document content:`;
+      
+      const result = await gemini.generateContent(prompt);
+      const response = result.response.text();
+
+      res.json({
+        success: true,
+        response: response
+      });
+    } catch (aiError) {
+      console.error('AI generation error:', aiError);
+      return res.status(503).json({ 
+        error: 'AI service error',
+        details: 'Failed to generate response. The AI service may be temporarily unavailable.'
+      });
+    }
+
+  } catch (error) {
+    console.error('Error in chat:', error);
+    res.status(500).json({ 
+      error: 'Failed to process chat message',
+      details: error.message 
+    });
+  }
+});
+
+// Generate quiz (updated to work with chatbot)
+router.post('/generate', authenticateToken, async (req, res) => {
+  try {
+    const { file_id, question_count = 5 } = req.body;
+    
+    if (!file_id) {
+      return res.status(400).json({ error: 'file_id is required' });
+    }
+
+    // Check if AI service is available
+    if (!gemini) {
+      return res.status(503).json({ 
+        error: 'AI service not available. Please check GEMINI_API_KEY configuration.',
+        details: 'The Gemini API key is not properly configured on the server.'
+      });
+    }
+
+    // Check if Qdrant client is available
+    if (!client) {
+      return res.status(503).json({ 
+        error: 'Vector database not available',
+        details: 'The document search service is currently unavailable.'
+      });
+    }
+
+    // Get text chunks with better error handling
+    let chunks;
+    try {
+      chunks = await client.scroll('document_chunks', {
+        filter: {
+          must: [
+            { key: 'file_id', match: { value: parseInt(file_id) } }
+          ]
+        },
+        limit: 1000
+      });
+    } catch (qdrantError) {
+      console.error('Qdrant error:', qdrantError);
+      return res.status(503).json({ 
+        error: 'Document search service error',
+        details: 'Failed to retrieve document content from the database.'
+      });
+    }
+
+    if (!chunks || !chunks.points || chunks.points.length === 0) {
+      return res.status(404).json({ 
+        error: 'No content found for this file',
+        details: 'This document may not have been processed yet or the file ID is invalid.'
+      });
+    }
+
+    // Combine chunks
+    const textContent = chunks.points.map(chunk => chunk.payload.text).join(' ');
+    
+    if (!textContent.trim()) {
+      return res.status(404).json({ 
+        error: 'Document content is empty',
+        details: 'The document appears to have no extractable text content.'
+      });
+    }
+
+    try {
+      // Generate MCQs using existing function
+      const mcqData = await generateMCQs(textContent, {
+        questionCount: question_count,
+        title: 'Generated Quiz',
+        file_id: parseInt(file_id)
+      });
+
+      res.json({
+        success: true,
+        type: 'mcq',
+        questions: mcqData.questions
+      });
+    } catch (aiError) {
+      console.error('Quiz generation error:', aiError);
+      return res.status(503).json({ 
+        error: 'Failed to generate quiz',
+        details: aiError.message
+      });
+    }
+
+  } catch (error) {
+    console.error('Error generating quiz:', error);
+    res.status(500).json({ 
+      error: 'Failed to generate quiz',
+      details: error.message 
+    });
+  }
+});
+
 module.exports = router;
