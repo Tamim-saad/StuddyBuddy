@@ -159,7 +159,7 @@ export const StickynotesDisplay = ({
             <ArrowBackIcon />
           </IconButton>
           <Typography variant="h5" sx={{ color: '#1e40af' }}>
-            {stickynotes[0]?.title || 'Study Notes'}
+            {title || 'Study Notes'}
           </Typography>
         </Box>
 

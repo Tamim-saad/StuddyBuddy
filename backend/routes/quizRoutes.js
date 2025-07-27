@@ -560,22 +560,28 @@ router.post('/generate-summary', authenticateToken, async (req, res) => {
       return res.status(404).json({ error: 'File not found' });
     }
 
-    // Get text chunks
-    const chunks = await client.scroll('document_chunks', {
-      filter: {
-        must: [
-          { key: 'file_id', match: { value: parseInt(file_id) } }
-        ]
-      },
-      limit: 1000
-    });
+    // Get text chunks with error handling
+    let chunks;
+    try {
+      chunks = await client.scroll('document_chunks', {
+        filter: {
+          must: [
+            { key: 'file_id', match: { value: parseInt(file_id) } }
+          ]
+        },
+        limit: 1000
+      });
+    } catch (qdrantError) {
+      console.error('Qdrant error:', qdrantError);
+      return res.status(500).json({ error: 'Failed to fetch document content' });
+    }
 
-    if (chunks[0].length === 0) {
+    if (!chunks || !chunks.points || chunks.points.length === 0) {
       return res.status(404).json({ error: 'No content found for this file' });
     }
 
     // Combine chunks
-    const textContent = chunks[0].map(chunk => chunk.payload.text).join(' ');
+    const textContent = chunks.points.map(chunk => chunk.payload.text).join(' ');
     
     if (!gemini) {
       return res.status(503).json({ error: 'AI service not available' });
