@@ -11,7 +11,8 @@ import {
   DialogContent,
   CircularProgress,
   Chip,
-  Alert
+  Alert,
+  Portal
 } from '@mui/material';
 import {
   Chat as ChatIcon,
@@ -51,6 +52,7 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
 
 
   // Generate PDF summary
@@ -111,7 +113,7 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
           question_count: 5 // Default count
         })
       });
-
+      
       if (!response.ok) throw new Error('Failed to generate quiz');
       
       const data = await response.json();
@@ -121,6 +123,7 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         file_id: fileId,
         title: `Quiz for ${fileName}`
       };
+      
       setCurrentQuiz(quizData);
       setQuizDialogOpen(true);
     } catch (error) {
@@ -157,7 +160,7 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         },
         body: JSON.stringify({ file_id: fileId })
       });
-
+      
       if (!response.ok) throw new Error('Failed to generate sticky notes');
       
       const data = await response.json();
@@ -427,69 +430,77 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         </Paper>
       )}
 
-      {/* Quiz Dialog */}
-      <Dialog
-        open={quizDialogOpen}
-        onClose={() => setQuizDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        slotProps={{
-          paper: { sx: { height: '90vh' } }
-        }}
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            Quiz Generated from PDF
-            <IconButton onClick={() => setQuizDialogOpen(false)}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ p: 1, overflow: 'auto', height: '70vh' }}>
-          {currentQuiz ? (
-            <MCQDisplay 
-              quiz={currentQuiz}
-              embedded={true}
-              onClose={() => setQuizDialogOpen(false)}
-            />
-          ) : (
-            <div>No quiz data available</div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Quiz Dialog - Rendered in Portal outside chatbot container */}
+      <Portal>
+        <Dialog
+          open={quizDialogOpen}
+          onClose={() => setQuizDialogOpen(false)}
+          maxWidth="md"
+          fullWidth
+          slotProps={{
+            paper: { sx: { height: '90vh' } }
+          }}
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Quiz Generated from PDF
+              <IconButton onClick={() => setQuizDialogOpen(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ p: 1, overflow: 'auto', height: '70vh' }}>
+            {currentQuiz ? (
+              <MCQDisplay 
+                quiz={currentQuiz}
+                embedded={true}
+                onClose={() => setQuizDialogOpen(false)}
+              />
+            ) : (
+              <Box sx={{ p: 3 }}>
+                <Typography>No quiz data available</Typography>
+              </Box>
+            )}
+          </DialogContent>
+        </Dialog>
+      </Portal>
 
-      {/* Sticky Notes Dialog */}
-      <Dialog
-        open={stickyDialogOpen}
-        onClose={() => setStickyDialogOpen(false)}
-        maxWidth="lg"
-        fullWidth
-        slotProps={{
-          paper: { sx: { height: '90vh' } }
-        }}
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            Sticky Notes from PDF
-            <IconButton onClick={() => setStickyDialogOpen(false)}>
-              <CloseIcon />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent sx={{ p: 1, overflow: 'auto', height: '70vh' }}>
-          {currentStickynotes ? (
-            <StickynotesDisplay 
-              stickynotes={currentStickynotes}
-              fileId={fileId}
-              title={`Notes for ${fileName}`}
-              embedded={true}
-              onClose={() => setStickyDialogOpen(false)}
-            />
-          ) : (
-            <div>No sticky notes data available</div>
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Sticky Notes Dialog - Rendered in Portal outside chatbot container */}
+      <Portal>
+        <Dialog
+          open={stickyDialogOpen}
+          onClose={() => setStickyDialogOpen(false)}
+          maxWidth="lg"
+          fullWidth
+          slotProps={{
+            paper: { sx: { height: '90vh' } }
+          }}
+        >
+          <DialogTitle>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              Sticky Notes from PDF
+              <IconButton onClick={() => setStickyDialogOpen(false)}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+          </DialogTitle>
+          <DialogContent sx={{ p: 1, overflow: 'auto', height: '70vh' }}>
+            {currentStickynotes ? (
+              <StickynotesDisplay 
+                stickynotes={currentStickynotes}
+                fileId={fileId}
+                title={`Notes for ${fileName}`}
+                embedded={true}
+                onClose={() => setStickyDialogOpen(false)}
+              />
+            ) : (
+              <Box sx={{ p: 3 }}>
+                <Typography>No sticky notes data available</Typography>
+              </Box>
+            )}
+          </DialogContent>
+        </Dialog>
+      </Portal>
     </>
   );
 };

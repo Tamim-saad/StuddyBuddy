@@ -30,12 +30,9 @@ export const StickynotesDisplay = ({
   const [flippedCards, setFlippedCards] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [saved, setSaved] = useState(false);
-  console.log('Location state:', location.state);
   const stickynotes = propStickynotes || location.state?.stickynotes || [];
   const fileId = propFileId || location.state?.file_id;
   const title = propTitle || location.state?.title || 'Study Notes';
-  console.log('Sticky notes id:', fileId);
-  console.log('Sticky notes title:', title);
 
   const handleFlip = (index) => {
     setFlippedCards(prev => ({
