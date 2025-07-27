@@ -42,6 +42,7 @@ export const StickynotesDisplay = ({
   };
 
   const getImportanceColor = (importance) => {
+    if (!importance) return green[500];
     switch (importance.toLowerCase()) {
       case 'high':
         return amber[700];
@@ -240,7 +241,7 @@ export const StickynotesDisplay = ({
               </CardContent>
               <CardActions sx={{ p: 3, justifyContent: 'space-between' }}>
                 <Chip
-                  label={note.importance}
+                  label={note.importance || 'medium'}
                   size="small"
                   sx={{
                     bgcolor: getImportanceColor(note.importance),
