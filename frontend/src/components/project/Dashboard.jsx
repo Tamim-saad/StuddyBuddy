@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from "react";
 import { Typography, IconButton, Box } from "../../common/icons";
-import { useMembers } from "../../context/MembersContext";
 import { plannerService, quizService, stickyNotesService } from "../../services";
 import {
   Chart as ChartJS,
@@ -28,11 +27,9 @@ ChartJS.register(
 );
 
 export const Dashboard = () => {
-  const { refreshData, loading } = useMembers();
-
+  const [loading, setLoading] = useState(false);
   const [tasks, setTasks] = useState([]);
   const [plannerLoading, setPlannerLoading] = useState(true);
-
   const [quizStats, setQuizStats] = useState({
     total: 0,
     mcq: 0,
@@ -45,7 +42,6 @@ export const Dashboard = () => {
     cqCompleted: 0,
   });
   const [quizLoading, setQuizLoading] = useState(true);
-
   const [stickyNotesStats, setStickyNotesStats] = useState({
     total: 0,
     highImportance: 0,
@@ -55,10 +51,8 @@ export const Dashboard = () => {
     averageNotesPerFile: 0,
   });
   const [stickyNotesLoading, setStickyNotesLoading] = useState(true);
-
   const [individualQuizzes, setIndividualQuizzes] = useState([]);
   const [individualQuizzesLoading, setIndividualQuizzesLoading] = useState(true);
-
   const [lastRefreshed, setLastRefreshed] = useState(new Date());
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -267,7 +261,6 @@ export const Dashboard = () => {
   const handleRefresh = () => {
     setIsRefreshing(true);
     Promise.all([
-      refreshData(),
       loadTasks(),
       loadQuizStats(),
       loadStickyNotesStats(),
@@ -279,7 +272,6 @@ export const Dashboard = () => {
   };
 
   useEffect(() => {
-    refreshData();
     loadTasks();
     loadQuizStats();
     loadStickyNotesStats();
@@ -287,7 +279,6 @@ export const Dashboard = () => {
     setLastRefreshed(new Date());
 
     const refreshInterval = setInterval(() => {
-      refreshData();
       loadTasks();
       loadQuizStats();
       loadStickyNotesStats();
@@ -296,7 +287,7 @@ export const Dashboard = () => {
     }, 30000);
 
     return () => clearInterval(refreshInterval);
-  }, [refreshData]);
+  }, []);
 
   return (
     <Box sx={{ width: "100%", display: "flex", justifyContent: "center" }}>

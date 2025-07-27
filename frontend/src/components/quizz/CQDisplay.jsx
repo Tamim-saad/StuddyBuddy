@@ -49,7 +49,7 @@ export const CQDisplay = () => {
   };
 
   const handleBack = () => {
-    navigate('/home/quiz');
+    navigate('/home/view-files');
   };
 
   const handleEvaluate = async () => {

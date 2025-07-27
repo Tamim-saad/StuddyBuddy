@@ -143,52 +143,57 @@ export const SavedQuiz = () => {
               No saved quizzes found for file: {files.find(f => f.id === selectedFileId)?.title}
             </Typography>
           ) : (
-            <Grid container spacing={4}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, justifyContent: 'center' }}>
               {quizzes.map((quiz) => (
-                <Grid item xs={12} sm={6} md={4} key={quiz.id}>
-                  <Card 
-                    sx={{ 
-                      cursor: 'pointer',
-                      transition: 'transform 0.2s',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: 4
-                      }
-                    }}
-                    onClick={() => handleQuizClick(quiz)}
-                  >
-                    <CardContent>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <QuizIcon sx={{ mr: 1, color: getQuizTypeColor(quiz.type) }} />
-                        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                          {quiz.title}
-                        </Typography>
-                        <Chip 
-                          label={quiz.type.toUpperCase()} 
-                          size="small"
-                          sx={{ 
-                            bgcolor: getQuizTypeColor(quiz.type),
-                            color: 'white'
-                          }}
-                        />
-                      </Box>
+                <Card 
+                  key={quiz.id}
+                  sx={{ 
+                    cursor: 'pointer',
+                    transition: 'transform 0.2s',
+                    width: '350px',
+                    height: '280px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: 4
+                    }
+                  }}
+                  onClick={() => handleQuizClick(quiz)}
+                >
+                  <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <QuizIcon sx={{ mr: 1, color: getQuizTypeColor(quiz.type) }} />
+                      <Typography variant="h6" sx={{ flexGrow: 1, wordBreak: 'break-word' }}>
+                        {quiz.title}
+                      </Typography>
+                      <Chip 
+                        label={quiz.type.toUpperCase()} 
+                        size="small"
+                        sx={{ 
+                          bgcolor: getQuizTypeColor(quiz.type),
+                          color: 'white',
+                          flexShrink: 0
+                        }}
+                      />
+                    </Box>
 
-                      <Typography variant="body2" color="text.secondary">
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                         Questions: {quiz.question_count || 0}
                       </Typography>
-                      {quiz.score !== undefined && quiz.score !== null && (
-                        <Typography variant="body2" color="text.secondary">
-                          Score: {quiz.score}
-                        </Typography>
-                      )}
-                      <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                        Created: {new Date(quiz.created_at).toLocaleString()}
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Score: {quiz.score !== undefined && quiz.score !== null ? quiz.score : 'Not attempted'}
                       </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                    </Box>
+                    
+                    <Typography variant="caption" display="block" sx={{ mt: 'auto', pt: 1 }}>
+                      Created: {new Date(quiz.created_at).toLocaleString()}
+                    </Typography>
+                  </CardContent>
+                </Card>
               ))}
-            </Grid>
+            </Box>
           )}
         </>
       )}

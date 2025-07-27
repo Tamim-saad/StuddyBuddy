@@ -14,17 +14,14 @@ const AppBar = () => {
       <header className="bg-white shadow-sm py-4">
         <div className="container mx-auto px-6 flex justify-between items-center">
           <nav className="hidden md:flex space-x-6 text-gray-700 font-medium">
-            <a href="#home" className="hover:text-green-500">
+            <a href="/" className="hover:text-green-500">
               Home
             </a>
-            <a href="#about" className="hover:text-green-500">
+            <a href="/about" className="hover:text-green-500">
               About Us
             </a>
-            <a href="#services" className="hover:text-green-500">
+            <a href="/services" className="hover:text-green-500">
               Services
-            </a>
-            <a href="#contact" className="hover:text-green-500">
-              Contact Us
             </a>
           </nav>
           <button

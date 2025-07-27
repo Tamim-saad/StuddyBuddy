@@ -1,5 +1,4 @@
 import { AppRouter } from "./router";
-import { MembersProvider } from "./context/MembersContext";
 import "@fortawesome/fontawesome-free/css/all.min.css";
 import { NotificationProvider } from "./context/NotificationContext";
 import { PomodoroProvider } from "./context/PomodoroContext";

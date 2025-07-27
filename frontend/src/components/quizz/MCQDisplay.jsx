@@ -56,7 +56,7 @@ export const MCQDisplay = ({ quiz: propQuiz, embedded = false, onClose }) => {
     if (embedded && onClose) {
       onClose();
     } else {
-      navigate('/home/quiz');  // Updated path
+      navigate('/home/view-files');  // Updated path
     }
   };
 

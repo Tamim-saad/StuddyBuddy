@@ -149,7 +149,7 @@ export const StickynotesDisplay = ({
               if (embedded && onClose) {
                 onClose();
               } else {
-                navigate('/home/stickynotes');
+                navigate('/home/file-list');
               }
             }}
             sx={{ mr: 4 }}

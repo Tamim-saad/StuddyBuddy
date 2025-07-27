@@ -16,6 +16,9 @@ import { SavedQuiz } from "../components/quizz/SavedQuiz";
 import PlannerDashboard from "../components/planner/PlannerDashboard";
 import {Demo} from "../components/demowork/Demo";
 import { NotificationsList } from "../components/notifications/NotificationsList";
+import { Feedback } from "../components/feedback/Feedback";
+
+import {  AboutUs,Services } from "../views";
 
 
 const Layout = () => {
@@ -34,6 +37,22 @@ export const router = createBrowserRouter([
     element: <AppBar />,
     children: [],
   },
+  {
+
+    path: "/about",
+
+    element: <AboutUs />,
+
+  },
+
+  {
+
+    path: "/services",
+
+    element: <Services />,
+
+  },
+
   {
     path: "/signup",
     element: <SignupForm />,
@@ -94,6 +113,10 @@ export const router = createBrowserRouter([
       {
         path: "saved-quiz",
         element: <SavedQuiz />,
+      },
+      {
+        path: "feedback",
+        element: <Feedback />,
       },
     ],
   },

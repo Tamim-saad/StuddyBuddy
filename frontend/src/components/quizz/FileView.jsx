@@ -220,23 +220,7 @@ export const FileView = () => {
           <Typography variant="body2" sx={{ mb: 3, color: "gray" }}>
             Choose a file to generate questions from!
           </Typography>
-          {sharedQuiz ? (<button
-                  onClick={shareQuiz}
-                  // disabled={!selectedFiles.length || loading}
-                  style={{
-                    padding: '10px 20px',
-                    backgroundColor: '#22c55e',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    // cursor: selectedFiles.length ? 'pointer' : 'not-allowed',
-                    opacity: selectedFiles.length ? 1 : 0.6,
-                    transition: 'all 0.3s'
-                  }}
-                >
-                  {/* {loading ? 'Generating...' : 'Generate CQ'} */}
-                  Share MCQ
-                </button>):(<></>)}
+          
           <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 3 }}>
             <SearchBar onSearch={handleSearch} />
           </Box>
