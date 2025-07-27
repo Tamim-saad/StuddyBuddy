@@ -11,7 +11,7 @@ router.get("/", authenticateToken, async (req, res) => {
     
     const query = `
       SELECT * FROM notification 
-      WHERE user_id = $1 AND read = false
+      WHERE user_id = $1
       ORDER BY date DESC, time DESC
       LIMIT 50`;
       
@@ -49,14 +49,13 @@ router.post("/", authenticateToken, async (req, res) => {
         [id]
       )).rows;
 
-      // ◼️ Generate a detailed “what changed” message
+      // ◼️ Generate a detailed "what changed" message
       message = generateUpdateMessage(
         title,
         task_type,
         priority,
         status,
-        prev,
-        attached_files
+        prev
       );
 
     } else {
@@ -92,7 +91,7 @@ function generateCreateMessage(title, task_type, priority) {
 }
 
 // Detailed update message generator
-function generateUpdateMessage(title, task_type, priority, status, previous, attached_files) {
+function generateUpdateMessage(title, task_type, priority, status, previous) {
   const changes = [];
 
   if (previous.title !== title) {
@@ -104,11 +103,10 @@ function generateUpdateMessage(title, task_type, priority, status, previous, att
   if (previous.status !== status) {
     changes.push(`status changed from "${previous.status}" to "${status}"`);
   }
-  if (JSON.stringify(previous.attached_files) !== JSON.stringify(attached_files)) {
-    changes.push(`attached files updated`);
-  }
 
-  return `The ${task_type || 'item'} "${title}" was updated: ${changes.join(', ')}.`;
+  return changes.length > 0 
+    ? `The ${task_type || 'item'} "${title}" was updated: ${changes.join(', ')}.`
+    : `The ${task_type || 'item'} "${title}" was updated.`;
 }
 // Mark a notification as read
 router.put("/:id/read", authenticateToken, async (req, res) => {
