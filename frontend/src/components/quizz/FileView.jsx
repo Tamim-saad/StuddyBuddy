@@ -104,6 +104,7 @@ export const FileView = () => {
     [];
 
   const handleGenerateQuiz = async (type, questionCount = 5) => {
+
     const fileId = selectedFiles[0];
     if (!fileId) {
       alert("Please select a file first");
@@ -112,7 +113,11 @@ export const FileView = () => {
 
     const accessToken = authServices.getAccessToken();
     const fileTitle = files.find((f) => f.id === fileId)?.title || "File";
-
+    const indexStatus = files.find((f) => f.id === fileId)?.indexing_status;
+    if (indexStatus !== "completed") {
+      alert("File indexing is not completed. Please index file first.");
+      return;
+    }
     try {
       setLoading(true);
       const response = await fetch(

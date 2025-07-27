@@ -7,6 +7,9 @@ const AppBar = () => {
   const handleClick = () => {
     navigate("/login");
   };
+  const handleClickLearnMore = () => {
+    navigate("/learn-more");
+  };
 
   return (
     <div className="bg-green-50 min-h-screen flex flex-col justify-between">
@@ -55,7 +58,9 @@ const AppBar = () => {
           <p className="text-gray-800 text-lg mt-4">
             Your personal study Companion, Anytime, Anywhere
           </p>
-          <button className="mt-6 bg-blue-500 text-white text-lg px-7 py-2.5 rounded-md hover:bg-blue-400">
+          <button className="mt-6 bg-blue-500 text-white text-lg px-7 py-2.5 rounded-md hover:bg-blue-400"
+          onClick={handleClickLearnMore}
+          >
           Learn More
           </button>
         </div>

@@ -12,22 +12,18 @@ export const NotificationProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [initialized, setInitialized] = useState(false);
 
-  // Debounced fetch function
-  const debouncedFetch = useCallback(
-    debounce(async () => {
-      if (!initialized) return;
-      
-      try {
-        const data = await notificationService.getNotifications();
-        setNotifications(data.notifications || []);
-        setUnreadCount(data.notifications.filter(n => !n.read).length);
-      } catch (err) {
-        console.error('Failed to fetch notifications:', err);
-        setError('Failed to load notifications');
-      }
-    }, 1000),
-    [initialized]
-  );
+  // Regular fetch function for polling
+  const fetchNotifications = useCallback(async () => {
+    if (!initialized) return;
+    try {
+      const data = await notificationService.getNotifications();
+      setNotifications(data.notifications || []);
+      setUnreadCount(data.notifications.filter(n => !n.read).length);
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+      setError('Failed to load notifications');
+    }
+  }, [initialized]);
 
   // Initial fetch
   const initialFetch = async () => {
@@ -47,14 +43,11 @@ export const NotificationProvider = ({ children }) => {
 
   useEffect(() => {
     initialFetch();
-    
-    // Set up polling with the debounced fetch
-    const interval = setInterval(debouncedFetch, 30000);
-    return () => {
-      clearInterval(interval);
-      debouncedFetch.cancel();
-    };
-  }, [debouncedFetch]);
+
+    // Set up polling with regular fetch
+    const interval = setInterval(fetchNotifications, 1000); // Poll every 5 seconds
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
 
   const markAsRead = async (notificationId) => {
     try {

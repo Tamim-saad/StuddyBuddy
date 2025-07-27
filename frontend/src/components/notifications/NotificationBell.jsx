@@ -52,12 +52,6 @@ export const NotificationBell = () => {
   const handleMarkAllAsRead = () => {
     markAllAsRead();
   };
-
-  const handleViewAll = () => {
-    navigate('/home/notifications');
-    handleClose();
-  };
-
   const open = Boolean(anchorEl);
   const id = open ? 'notification-popover' : undefined;
 
@@ -182,15 +176,7 @@ export const NotificationBell = () => {
             </List>
             
             <Divider />
-            <Box sx={{ p: 1.5, textAlign: 'center' }}>
-              <Button 
-                variant="text" 
-                onClick={handleViewAll} 
-                fullWidth
-              >
-                View All Notifications
-              </Button>
-            </Box>
+            
           </>
         )}
       </Popover>

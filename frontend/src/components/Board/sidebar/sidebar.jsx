@@ -26,6 +26,7 @@ import{
 import { amber } from "@mui/material/colors";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { NotificationBell } from "../../notifications/NotificationBell";
 
 const Sidebar = () => {
   const navigate = useNavigate();
@@ -115,7 +116,7 @@ const Sidebar = () => {
     },
     {
       text: "Notifications",
-      icon: <Bell size={24} color="#fffbeb" />,
+      icon: <NotificationBell size={24} color="#fffbeb" />,
       route: "notifications",
     },
   ];

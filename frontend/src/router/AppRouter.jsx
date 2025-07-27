@@ -15,10 +15,10 @@ import { SavedStickynotes } from "../components/stickynotes/SavedStickynotes";
 import { SavedQuiz } from "../components/quizz/SavedQuiz";
 import PlannerDashboard from "../components/planner/PlannerDashboard";
 import {Demo} from "../components/demowork/Demo";
-import { NotificationsList } from "../components/notifications/NotificationsList";
 import { Feedback } from "../components/feedback/Feedback";
 
 import {  AboutUs,Services } from "../views";
+import LearnMore from "../views/LearnMore";
 
 
 const Layout = () => {
@@ -60,6 +60,11 @@ export const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginForm />,
+  },
+  {
+
+    path: "/learn-more",
+    element: <LearnMore />,
   },
   {
     path: "/home",
@@ -117,7 +122,7 @@ export const router = createBrowserRouter([
       {
         path: "feedback",
         element: <Feedback />,
-      },
+      }
     ],
   },
 ]);
