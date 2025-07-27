@@ -12,7 +12,8 @@ import {
   DialogContent,
   CircularProgress,
   Chip,
-  Alert
+  Alert,
+  Button
 } from '@mui/material';
 import {
   Chat as ChatIcon,
@@ -44,6 +45,15 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
   const [isGeneratingSticky, setIsGeneratingSticky] = useState(false);
   
   const messagesEndRef = useRef(null);
+
+  // Debug state changes
+  useEffect(() => {
+    console.log('Quiz dialog state:', { quizDialogOpen, currentQuiz });
+  }, [quizDialogOpen, currentQuiz]);
+
+  useEffect(() => {
+    console.log('Sticky dialog state:', { stickyDialogOpen, currentStickynotes });
+  }, [stickyDialogOpen, currentStickynotes]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -118,6 +128,8 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
       if (!response.ok) throw new Error('Failed to generate quiz');
       
       const data = await response.json();
+      console.log('Quiz data received:', data); // Debug log
+      
       const quizData = {
         type: data.type || 'mcq',
         questions: data.questions || [],
@@ -125,8 +137,17 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         title: `Quiz for ${fileName}`
       };
       
+      console.log('Quiz data prepared:', quizData); // Debug log
+      
       setCurrentQuiz(quizData);
       setQuizDialogOpen(true);
+      
+      // Add success message to chat
+      setMessages(prev => [...prev, {
+        type: 'bot',
+        content: `✅ Quiz generated with ${quizData.questions.length} questions! Check the popup above.`,
+        timestamp: new Date()
+      }]);
     } catch (error) {
       console.error('Quiz generation error:', error);
       let errorMessage = 'Failed to generate quiz';
@@ -165,8 +186,17 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
       if (!response.ok) throw new Error('Failed to generate sticky notes');
       
       const data = await response.json();
+      console.log('Sticky notes data received:', data); // Debug log
+      
       setCurrentStickynotes(data.stickynotes);
       setStickyDialogOpen(true);
+      
+      // Add success message to chat
+      setMessages(prev => [...prev, {
+        type: 'bot',
+        content: `✅ Generated ${data.stickynotes?.length || 0} sticky notes! Check the popup above.`,
+        timestamp: new Date()
+      }]);
     } catch (error) {
       console.error('Sticky notes generation error:', error);
       let errorMessage = 'Failed to generate sticky notes';
@@ -351,7 +381,7 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
                 <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
                   <Chip
                     icon={<SummaryIcon />}
-                    label="Summarize"
+                    label={isGeneratingSummary ? "Summarizing..." : "Summarize"}
                     onClick={generateSummary}
                     disabled={isGeneratingSummary}
                     color="primary"
@@ -360,7 +390,7 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
                   />
                   <Chip
                     icon={<QuizIcon />}
-                    label="Generate Quiz"
+                    label={isGeneratingQuiz ? "Generating..." : "Generate Quiz"}
                     onClick={generateQuiz}
                     disabled={isGeneratingQuiz}
                     color="secondary"
@@ -369,10 +399,52 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
                   />
                   <Chip
                     icon={<StickyIcon />}
-                    label="Sticky Notes"
+                    label={isGeneratingSticky ? "Generating..." : "Sticky Notes"}
                     onClick={generateStickyNotes}
                     disabled={isGeneratingSticky}
                     color="success"
+                    variant="outlined"
+                    size="small"
+                  />
+                  {/* Test Buttons for Debugging */}
+                  <Chip
+                    label="Test Quiz"
+                    onClick={() => {
+                      const testQuiz = {
+                        type: 'mcq',
+                        questions: [
+                          {
+                            question: "Test question?",
+                            options: ["A", "B", "C", "D"],
+                            correctAnswer: "A"
+                          }
+                        ],
+                        file_id: fileId,
+                        title: "Test Quiz"
+                      };
+                      setCurrentQuiz(testQuiz);
+                      setQuizDialogOpen(true);
+                      console.log('Test quiz dialog opened');
+                    }}
+                    color="info"
+                    variant="outlined"
+                    size="small"
+                  />
+                  <Chip
+                    label="Test Notes"
+                    onClick={() => {
+                      const testNotes = [
+                        {
+                          content: "Test note content",
+                          category: "test",
+                          importance: "high"
+                        }
+                      ];
+                      setCurrentStickynotes(testNotes);
+                      setStickyDialogOpen(true);
+                      console.log('Test sticky notes dialog opened');
+                    }}
+                    color="info"
                     variant="outlined"
                     size="small"
                   />
@@ -434,8 +506,11 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
       {/* Quiz Dialog - Rendered using createPortal to document.body */}
       {quizDialogOpen && createPortal(
         <Dialog
-          open={true}
-          onClose={() => setQuizDialogOpen(false)}
+          open={quizDialogOpen}
+          onClose={() => {
+            setQuizDialogOpen(false);
+            setCurrentQuiz(null);
+          }}
           maxWidth="md"
           fullWidth
           sx={{ 
@@ -448,22 +523,43 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         >
           <DialogTitle>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Quiz Generated from PDF
-              <IconButton onClick={() => setQuizDialogOpen(false)}>
+              <Typography variant="h6">📝 Quiz Generated from PDF</Typography>
+              <IconButton onClick={() => {
+                setQuizDialogOpen(false);
+                setCurrentQuiz(null);
+              }}>
                 <CloseIcon />
               </IconButton>
             </Box>
           </DialogTitle>
           <DialogContent sx={{ p: 1, overflow: 'auto', height: 'calc(90vh - 64px)' }}>
-            {currentQuiz ? (
+            {currentQuiz && currentQuiz.questions && currentQuiz.questions.length > 0 ? (
               <MCQDisplay 
                 quiz={currentQuiz}
                 embedded={true}
-                onClose={() => setQuizDialogOpen(false)}
+                onClose={() => {
+                  setQuizDialogOpen(false);
+                  setCurrentQuiz(null);
+                }}
               />
             ) : (
-              <Box sx={{ p: 3 }}>
-                <Typography>No quiz data available</Typography>
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" gutterBottom>
+                  No Quiz Data Available
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {currentQuiz ? 'The quiz was generated but contains no questions.' : 'Quiz data could not be loaded.'}
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  onClick={() => {
+                    setQuizDialogOpen(false);
+                    setCurrentQuiz(null);
+                  }}
+                  sx={{ mt: 2 }}
+                >
+                  Close
+                </Button>
               </Box>
             )}
           </DialogContent>
@@ -474,8 +570,11 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
       {/* Sticky Notes Dialog - Rendered using createPortal to document.body */}
       {stickyDialogOpen && createPortal(
         <Dialog
-          open={true}
-          onClose={() => setStickyDialogOpen(false)}
+          open={stickyDialogOpen}
+          onClose={() => {
+            setStickyDialogOpen(false);
+            setCurrentStickynotes(null);
+          }}
           maxWidth="lg"
           fullWidth
           sx={{ 
@@ -488,24 +587,45 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         >
           <DialogTitle>
             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-              Sticky Notes from PDF
-              <IconButton onClick={() => setStickyDialogOpen(false)}>
+              <Typography variant="h6">📌 Sticky Notes from PDF</Typography>
+              <IconButton onClick={() => {
+                setStickyDialogOpen(false);
+                setCurrentStickynotes(null);
+              }}>
                 <CloseIcon />
               </IconButton>
             </Box>
           </DialogTitle>
           <DialogContent sx={{ p: 1, overflow: 'auto', height: 'calc(90vh - 64px)' }}>
-            {currentStickynotes ? (
+            {currentStickynotes && Array.isArray(currentStickynotes) && currentStickynotes.length > 0 ? (
               <StickynotesDisplay 
                 stickynotes={currentStickynotes}
                 fileId={fileId}
                 title={`Notes for ${fileName}`}
                 embedded={true}
-                onClose={() => setStickyDialogOpen(false)}
+                onClose={() => {
+                  setStickyDialogOpen(false);
+                  setCurrentStickynotes(null);
+                }}
               />
             ) : (
-              <Box sx={{ p: 3 }}>
-                <Typography>No sticky notes data available</Typography>
+              <Box sx={{ p: 3, textAlign: 'center' }}>
+                <Typography variant="h6" gutterBottom>
+                  No Sticky Notes Available
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {currentStickynotes ? 'The sticky notes were generated but contain no data.' : 'Sticky notes data could not be loaded.'}
+                </Typography>
+                <Button 
+                  variant="contained" 
+                  onClick={() => {
+                    setStickyDialogOpen(false);
+                    setCurrentStickynotes(null);
+                  }}
+                  sx={{ mt: 2 }}
+                >
+                  Close
+                </Button>
               </Box>
             )}
           </DialogContent>
