@@ -189,7 +189,7 @@ const PlannerDashboard = () => {
 
   const handleTaskStatusChange = async (taskId, newStatus) => {
     try {
-      await plannerService.updateTask(taskId, { status: newStatus });
+      await plannerService.updateTask(taskId, { status: newStatus }, setMessage);
       setTasks(prev => prev.map(task =>
         task.id === taskId ? { ...task, status: newStatus } : task
       ));

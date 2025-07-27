@@ -1,7 +1,7 @@
 import { http } from '../common/http';
 import { authServices } from '../auth';
 
-const API_BASE = '/api/planner';
+const API_BASE = `${process.env.REACT_APP_BASE_URL}/api/planner`;
 
 export const plannerService = {
   // Get all planner tasks with optional filters
