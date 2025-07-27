@@ -74,9 +74,20 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         timestamp: new Date()
       }]);
     } catch (error) {
+      console.error('Summary generation error:', error);
+      let errorMessage = 'Failed to generate summary';
+      
+      if (error.message.includes('503')) {
+        errorMessage = 'AI service is currently unavailable. Please try again later.';
+      } else if (error.message.includes('404')) {
+        errorMessage = 'No content found for this PDF. The document may not be processed yet.';
+      } else if (error.message.includes('GEMINI_API_KEY')) {
+        errorMessage = 'AI service configuration issue. Please contact support.';
+      }
+      
       setMessages(prev => [...prev, {
         type: 'bot',
-        content: `❌ Failed to generate summary: ${error.message}`,
+        content: `❌ ${errorMessage}`,
         timestamp: new Date()
       }]);
     } finally {
@@ -110,9 +121,20 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
       });
       setQuizDialogOpen(true);
     } catch (error) {
+      console.error('Quiz generation error:', error);
+      let errorMessage = 'Failed to generate quiz';
+      
+      if (error.message.includes('503')) {
+        errorMessage = 'AI service is currently unavailable. Please try again later.';
+      } else if (error.message.includes('404')) {
+        errorMessage = 'No content found for this PDF. The document may not be processed yet.';
+      } else if (error.message.includes('GEMINI_API_KEY')) {
+        errorMessage = 'AI service configuration issue. Please contact support.';
+      }
+      
       setMessages(prev => [...prev, {
         type: 'bot',
-        content: `❌ Failed to generate quiz: ${error.message}`,
+        content: `❌ ${errorMessage}`,
         timestamp: new Date()
       }]);
     } finally {
@@ -139,9 +161,20 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
       setCurrentStickynotes(data.stickynotes);
       setStickyDialogOpen(true);
     } catch (error) {
+      console.error('Sticky notes generation error:', error);
+      let errorMessage = 'Failed to generate sticky notes';
+      
+      if (error.message.includes('503')) {
+        errorMessage = 'AI service is currently unavailable. Please try again later.';
+      } else if (error.message.includes('404')) {
+        errorMessage = 'No content found for this PDF. The document may not be processed yet.';
+      } else if (error.message.includes('GEMINI_API_KEY')) {
+        errorMessage = 'AI service configuration issue. Please contact support.';
+      }
+      
       setMessages(prev => [...prev, {
         type: 'bot',
-        content: `❌ Failed to generate sticky notes: ${error.message}`,
+        content: `❌ ${errorMessage}`,
         timestamp: new Date()
       }]);
     } finally {
@@ -185,9 +218,20 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         timestamp: new Date()
       }]);
     } catch (error) {
+      console.error('Chat error:', error);
+      let errorMessage = 'Failed to get response';
+      
+      if (error.message.includes('503')) {
+        errorMessage = 'AI service is currently unavailable. Please try again later.';
+      } else if (error.message.includes('404')) {
+        errorMessage = 'No content found for this PDF. The document may not be processed yet.';
+      } else if (error.message.includes('GEMINI_API_KEY')) {
+        errorMessage = 'AI service configuration issue. Please contact support.';
+      }
+      
       setMessages(prev => [...prev, {
         type: 'bot',
-        content: `❌ Error: ${error.message}`,
+        content: `❌ ${errorMessage}`,
         timestamp: new Date()
       }]);
     } finally {
@@ -364,7 +408,7 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
                   placeholder="Ask about the PDF..."
                   value={inputMessage}
                   onChange={(e) => setInputMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                   disabled={isLoading}
                 />
                 <IconButton
@@ -386,8 +430,8 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         onClose={() => setQuizDialogOpen(false)}
         maxWidth="md"
         fullWidth
-        PaperProps={{
-          sx: { height: '90vh' }
+        slotProps={{
+          paper: { sx: { height: '90vh' } }
         }}
       >
         <DialogTitle>
@@ -415,8 +459,8 @@ const PDFChatbot = ({ fileId, filePath, fileName }) => {
         onClose={() => setStickyDialogOpen(false)}
         maxWidth="lg"
         fullWidth
-        PaperProps={{
-          sx: { height: '90vh' }
+        slotProps={{
+          paper: { sx: { height: '90vh' } }
         }}
       >
         <DialogTitle>

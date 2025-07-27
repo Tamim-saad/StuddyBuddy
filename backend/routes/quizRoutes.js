@@ -607,41 +607,83 @@ router.post('/chat', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'file_id and message are required' });
     }
 
-    // Get text chunks
-    const chunks = await client.scroll('document_chunks', {
-      filter: {
-        must: [
-          { key: 'file_id', match: { value: parseInt(file_id) } }
-        ]
-      },
-      limit: 1000
-    });
+    // Check if AI service is available
+    if (!gemini) {
+      return res.status(503).json({ 
+        error: 'AI service not available. Please check GEMINI_API_KEY configuration.',
+        details: 'The Gemini API key is not properly configured on the server.'
+      });
+    }
 
-    if (chunks[0].length === 0) {
-      return res.status(404).json({ error: 'No content found for this file' });
+    // Check if Qdrant client is available
+    if (!client) {
+      return res.status(503).json({ 
+        error: 'Vector database not available',
+        details: 'The document search service is currently unavailable.'
+      });
+    }
+
+    // Get text chunks with better error handling
+    let chunks;
+    try {
+      chunks = await client.scroll('document_chunks', {
+        filter: {
+          must: [
+            { key: 'file_id', match: { value: parseInt(file_id) } }
+          ]
+        },
+        limit: 1000
+      });
+    } catch (qdrantError) {
+      console.error('Qdrant error:', qdrantError);
+      return res.status(503).json({ 
+        error: 'Document search service error',
+        details: 'Failed to retrieve document content from the database.'
+      });
+    }
+
+    if (!chunks || !chunks.points || chunks.points.length === 0) {
+      return res.status(404).json({ 
+        error: 'No content found for this file',
+        details: 'This document may not have been processed yet or the file ID is invalid.'
+      });
     }
 
     // Combine chunks
-    const textContent = chunks[0].map(chunk => chunk.payload.text).join(' ');
+    const textContent = chunks.points.map(chunk => chunk.payload.text).join(' ');
     
-    if (!gemini) {
-      return res.status(503).json({ error: 'AI service not available' });
+    if (!textContent.trim()) {
+      return res.status(404).json({ 
+        error: 'Document content is empty',
+        details: 'The document appears to have no extractable text content.'
+      });
     }
 
-    // Generate response using Gemini
-    const prompt = `You are a helpful assistant that answers questions about the provided document. Here is the document content:\n\n${textContent.substring(0, 6000)}\n\nUser question: ${message}\n\nPlease provide a helpful and accurate answer based on the document content:`;
-    
-    const result = await gemini.generateContent(prompt);
-    const response = result.response.text();
+    try {
+      // Generate response using Gemini
+      const prompt = `You are a helpful assistant that answers questions about the provided document. Here is the document content:\n\n${textContent.substring(0, 6000)}\n\nUser question: ${message}\n\nPlease provide a helpful and accurate answer based on the document content:`;
+      
+      const result = await gemini.generateContent(prompt);
+      const response = result.response.text();
 
-    res.json({
-      success: true,
-      response: response
-    });
+      res.json({
+        success: true,
+        response: response
+      });
+    } catch (aiError) {
+      console.error('AI generation error:', aiError);
+      return res.status(503).json({ 
+        error: 'AI service error',
+        details: 'Failed to generate response. The AI service may be temporarily unavailable.'
+      });
+    }
 
   } catch (error) {
     console.error('Error in chat:', error);
-    res.status(500).json({ error: 'Failed to process chat message' });
+    res.status(500).json({ 
+      error: 'Failed to process chat message',
+      details: error.message 
+    });
   }
 });
 
@@ -654,35 +696,85 @@ router.post('/generate', authenticateToken, async (req, res) => {
       return res.status(400).json({ error: 'file_id is required' });
     }
 
-    // Get text chunks
-    const chunks = await client.scroll('document_chunks', {
-      filter: {
-        must: [
-          { key: 'file_id', match: { value: parseInt(file_id) } }
-        ]
-      },
-      limit: 1000
-    });
+    // Check if AI service is available
+    if (!gemini) {
+      return res.status(503).json({ 
+        error: 'AI service not available. Please check GEMINI_API_KEY configuration.',
+        details: 'The Gemini API key is not properly configured on the server.'
+      });
+    }
 
-    if (chunks[0].length === 0) {
-      return res.status(404).json({ error: 'No content found for this file' });
+    // Check if Qdrant client is available
+    if (!client) {
+      return res.status(503).json({ 
+        error: 'Vector database not available',
+        details: 'The document search service is currently unavailable.'
+      });
+    }
+
+    // Get text chunks with better error handling
+    let chunks;
+    try {
+      chunks = await client.scroll('document_chunks', {
+        filter: {
+          must: [
+            { key: 'file_id', match: { value: parseInt(file_id) } }
+          ]
+        },
+        limit: 1000
+      });
+    } catch (qdrantError) {
+      console.error('Qdrant error:', qdrantError);
+      return res.status(503).json({ 
+        error: 'Document search service error',
+        details: 'Failed to retrieve document content from the database.'
+      });
+    }
+
+    if (!chunks || !chunks.points || chunks.points.length === 0) {
+      return res.status(404).json({ 
+        error: 'No content found for this file',
+        details: 'This document may not have been processed yet or the file ID is invalid.'
+      });
     }
 
     // Combine chunks
-    const textContent = chunks[0].map(chunk => chunk.payload.text).join(' ');
+    const textContent = chunks.points.map(chunk => chunk.payload.text).join(' ');
     
-    // Generate MCQs using existing function
-    const questions = await generateMCQs(textContent, question_count);
+    if (!textContent.trim()) {
+      return res.status(404).json({ 
+        error: 'Document content is empty',
+        details: 'The document appears to have no extractable text content.'
+      });
+    }
 
-    res.json({
-      success: true,
-      type: 'mcq',
-      questions: questions
-    });
+    try {
+      // Generate MCQs using existing function
+      const mcqData = await generateMCQs(textContent, {
+        questionCount: question_count,
+        title: 'Generated Quiz',
+        file_id: parseInt(file_id)
+      });
+
+      res.json({
+        success: true,
+        type: 'mcq',
+        questions: mcqData.questions
+      });
+    } catch (aiError) {
+      console.error('Quiz generation error:', aiError);
+      return res.status(503).json({ 
+        error: 'Failed to generate quiz',
+        details: aiError.message
+      });
+    }
 
   } catch (error) {
     console.error('Error generating quiz:', error);
-    res.status(500).json({ error: 'Failed to generate quiz' });
+    res.status(500).json({ 
+      error: 'Failed to generate quiz',
+      details: error.message 
+    });
   }
 });
 
