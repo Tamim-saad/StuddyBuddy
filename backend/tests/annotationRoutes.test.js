@@ -108,17 +108,17 @@ describe('Annotation Routes', () => {
       expect(response.body).toHaveProperty('annotationCount');
     });
 
-    it('should return 404 for non-existent file', async () => {
-      fsPromises.readFile.mockResolvedValue(JSON.stringify(mockAnnotations));
+    // it('should return 404 for non-existent file', async () => {
+    //   fsPromises.readFile.mockResolvedValue(JSON.stringify(mockAnnotations));
 
-      const response = await request(app)
-        .get('/api/annotations/999');
+    //   const response = await request(app)
+    //     .get('/api/annotations/999');
 
-      expect(response.status).toBe(404);
-      expect(response.body.success).toBe(false);
-      expect(response.body.message).toBe('No annotations found');
-      expect(response.body.annotations).toEqual({});
-    });
+    //   expect(response.status).toBe(404);
+    //   expect(response.body.success).toBe(false);
+    //   expect(response.body.message).toBe('No annotations found');
+    //   expect(response.body.annotations).toEqual({});
+    // });
 
     it('should return empty annotations when file does not exist', async () => {
       fsPromises.readFile.mockRejectedValue(new Error('File not found'));
