@@ -381,7 +381,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 📞 Support
 
-For support, email tamim.saad.cse@gmail.com or create an issue in this repository.
+For support, email tamimsaad1812@gmail.com or create an issue in this repository.
 
 You can also use the in-app feedback system to report issues or suggest improvements directly from the application.
 
