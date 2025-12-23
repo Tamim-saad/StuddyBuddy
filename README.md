@@ -2,6 +2,8 @@
 
 StuddyBuddy is an intelligent study companion that helps students and learners create quizzes, generate sticky notes, and annotate PDF documents using AI technology. Built with React, Node.js, and powered by Google's Gemini AI.
 
+### Project Demonstration : https://www.youtube.com/watch?v=Sgg8ST6DOFQ 
+
 ## ✨ Features
 
 ### 🎯 **AI-Powered Quiz Generation**
